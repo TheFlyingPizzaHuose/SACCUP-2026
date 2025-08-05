@@ -23,17 +23,12 @@ inlet_pipe_area = pi * (inlet_pipe_diam /2)^2; % m^2
 supply_tank_volume = 0.045;
 
 %====Tank dimensions====
-oriffice_diam = 0.06*0.0254; %meters
+oriffice_diam = 0.03*0.0254; %meters
 orifice_area = pi * (oriffice_diam / 2)^2; % m^2
 
 tank_internal_diam = 3.5*0.0254; %meters
 tank_length = 8*0.3048; %meters
 tank_volume = tank_length*pi*(tank_internal_diam / 2)^2; %m^3
-
-%====injector dimensions====
-injector_diam = 0.04*0.0254; %meters
-num_injectors = 61;
-injector_area = num_injectors * pi * (injector_diam / 2)^2; % m^2
 
 %====Chamber dimensions====
 port_diam = 2*0.0254; %meters
@@ -41,8 +36,13 @@ chamber_length = 2*0.3048; %meters
 chamber_OD = 3.5*0.0254; %meters
 chamber_volume = pi * (port_diam/2)^2 * chamber_length;
 
+%====injector dimensions====
+injector_diam = 0.093*0.0254; %meters
+num_injectors = 61;
+injector_area = num_injectors * pi * (injector_diam / 2)^2; % m^2
+
 %====Nozzle dimensions====
-throat_diam = 1.330*0.0254; %meters
+throat_diam = 1.33*0.0254; %meters
 exit_diam = 2.61*0.0254; %meters
 throat_area = pi * (throat_diam / 2)^2; % m^2
 exit_area = pi * (exit_diam / 2)^2; % m^2
@@ -220,43 +220,45 @@ end
 
 function latent_heat = N2O_latent_heat(temp)
     %https://airgasspecialtyproducts.com/wp-content/uploads/2016/02/Properties-Nitrous-Oxide.pdf
-    T = [32, 40, 50, 60, 70, 80, 97]; %F
-    heats = [106.8, 101.5, 93.7, 86.2, 77.7, 69, 0]; %BTU/lb
+    T = [-30, -20, -10, 0, 10, 20, 32, 40, 50, 60, 70, 80, 97]; %F
+    heats = [135.9, 131.9, 127.7, 123.0, 118.5, 113.4, 106.8, 101.5, 93.7, 86.2, 77.7, 69, 0]; %BTU/lb
     latent_heat = interp1(T, heats, ((temp-273.15)*9/5)+32)*2326; %J/kg
 end
 
-function pressure = real_gas_law(mass, molar, temp, volume, prev_pressure)
+function Z = N2O_Z_fac(prev_pressure)
     pres_atm = [0, 10, 20, 30, 40, 50, 60, 70, 80];
     Zs = [1, 0.85, 0.78, 0.72, 0.65, 0.56, 0.49, 0.27, 0.2];
     Z = interp1(pres_atm, Zs, prev_pressure/101325);
-    pressure = Z*temp*8.314*mass/(molar*volume);
 end
 
-function [liq_mass_new, gas_mass_new] = balance_rho(liq_mass, gas_mass, temp, volume)
+function [liq_mass_new, gas_mass_new] = balance_rho(liq_mass, gas_mass, temp, volume, mol_N2, tank_pres)
+    R_N2O = 188.8987;
     if(liq_mass+gas_mass <= 0)
         liq_mass_new = liq_mass;
         gas_mass_new = gas_mass;
         return
     end
-    [rho_liq, rho_gas] = N2O_properties(temp);
-    mass = liq_mass+gas_mass;
-    gas_ratio = (volume*rho_liq*rho_gas-mass*rho_gas)/(mass*rho_liq-mass*rho_gas);
-    if(gas_ratio > 1) %indicates there's not enough mass to fill the tank with the given gas density
-        gas_ratio = 1;
+    total_mass = liq_mass + gas_mass;
+    [rho_liq, ~] = N2O_properties(temp);
+    Z_factor = N2O_Z_fac(tank_pres);
+    A = temp*mol_N2*8.314;
+    B = temp*Z_factor*total_mass*R_N2O;
+    C = total_mass/rho_liq;
+    gas_ratio = (A+tank_pres*C-tank_pres*volume)/(tank_pres*C-B);
+    gas_mass_new = gas_ratio*total_mass;
+    liq_mass_new = total_mass-gas_mass_new;
+    if(gas_ratio < 0)
+        disp('Error')
     end
-    gas_mass_new = mass*gas_ratio;
-    liq_mass_new = mass-gas_mass_new;
+    if(gas_ratio > 1)
+        disp('Error')
+    end
 end
 
 function [d_temp, new_vaporized] = vaporize(old_gas_mass, new_gas_mass, liquid_mass, dt, temp, reset)
     persistent delay_vaporized;
     if isempty(delay_vaporized) || reset
         delay_vaporized = 0;
-    end
-    if(false && new_gas_mass < old_gas_mass) %if amount of gas is being reduced send end sim signal
-        d_temp = 1000;
-        new_vaporized = 0;
-        return
     end
     time_constant = dt/0.15;
     Cp = 1720; %J/kg*K https://rocketprops.readthedocs.io/en/latest/n2o_prop.html?
@@ -308,7 +310,7 @@ liquid_mass = 7.514; % Kg
 vapor_mass = 0; % Kg
 prop_used = 0; %Kg
 
-outside_temp = 273.15+10; % K
+outside_temp = 273.15+5; % K
 tank_temp = outside_temp; % K
 
 N20_pres = 0; %Pa
@@ -316,7 +318,7 @@ N2_pres = 0; %Pa
 N2_mols = 0; %mol
 
 outside_pres = 101325; %Pa
-tank_pres = 612*101325/14.7; % Pa
+tank_pres = 635*101325/14.7; % Pa
 chamber_pres = 101325*14.7/14.7; %Pa
 
 chamber_mass = chamber_volume*chamber_pres/(287*300); %Kg Ideal gas law with air
@@ -337,53 +339,52 @@ masses = [];
 of_ratios_record = [];
 thrusts = [];
 
-%reset vaporize_condense internal variable
-vaporize(0, 0, 0, 0, 0, 1);
-
-%determine liquid vs vapor mass ratios in tank
-[x,y] = balance_rho(liquid_mass, vapor_mass, tank_temp, tank_volume);
-liquid_mass = x;
-vapor_mass = y;
-[x,y,z] = N2O_properties(tank_temp);
-N20_pres = z;
-N2_pres = tank_pres - N20_pres;
-if N2_pres < 0
-    disp('Error: N2_pres is negative, try reducing initial tank temperature');
+%determine amount of gas space and therfore how much nitrous
+[rho_liquid,~,vap_pres] = N2O_properties(tank_temp);
+N2_pres = tank_pres;
+if(N2_pres < 0)
+    disp('Error: N2_pres negative, N2O temp too high')
     return;
 end
 
-vapor_volume = vapor_mass/y; %m3
+vapor_volume = tank_volume-liquid_mass/rho_liquid; %m3
 N2_mols = (N2_pres*vapor_volume)/(R_u*tank_temp);
 
 last = liquid_mass;
 
+%reset vaporize_condense internal variable
+vaporize(0, 0, 0, 0, 0, 1);
 
-%while chekc is "has liq N2O and tank pressure higher than chamber pressure
-%and has fuel grain left
-while liquid_mass > 0.015 && vapor_mass > 0 && port_diam < chamber_OD && tank_pres > chamber_pres
-    [rho_liquid, ~, ~] = N2O_properties(tank_temp); %calculate new nitrous properties
+%while "has liq N2O and tank pressure higher than chamber pressure
+%and has fuel grain left"
+while liquid_mass > 0.015 && vapor_mass >= 0 && port_diam < chamber_OD && tank_pres > chamber_pres
+    [rho_liquid, ~, vap_pres] = N2O_properties(tank_temp); %calculate new nitrous properties
 
     %transfer mass from tank to chamber
     d_mass = dt*mass_in(rho_liquid, tank_pres, chamber_pres, injector_area, 2);%k=2 is based on aspire space experience
     liquid_mass = liquid_mass - d_mass; 
 
-    %vaporize some nitrous
-    [liq_mass_new, gas_mass_new] = balance_rho(liquid_mass, vapor_mass, tank_temp, tank_volume); %calculate new mass fractions of liquid vs gas in tank
-    [d_temp, new_vaporized] = vaporize(vapor_mass, gas_mass_new, liquid_mass, dt, tank_temp, 0); %calculate temp reduced from vaporization of liquid into gas
-    if d_temp == 1000 %if end sim signal, break while loop
-        break
+    %check if N2 pressure is still high enough to keep N2O in liquid phase
+    if N2_pres > vap_pres
+        vapor_volume = tank_volume-liquid_mass/rho_liquid; %m3
+        N2_pres = (N2_mols*R_u*tank_temp)/vapor_volume;
+        tank_pres = N2_pres;
+    else
+        [liq_mass_new, gas_mass_new] = balance_rho(liquid_mass, vapor_mass, tank_temp, tank_volume, N2_mols, vap_pres); %calculate new mass fractions of liquid vs gas in tank
+        [d_temp, new_vaporized] = vaporize(vapor_mass, gas_mass_new, liquid_mass, dt, tank_temp, 0); %calculate temp reduced from vaporization of liquid into gas
+    
+        tank_temp = tank_temp + d_temp; %cool the tank (the liquid technically)
+
+        %convert some liquid into vapor based on the output of vaporize function
+        liquid_mass = liquid_mass - new_vaporized;
+        vapor_mass = vapor_mass + new_vaporized;
+
+        vapor_volume = tank_volume-liquid_mass/rho_liquid; %m3
+        N2_pres = (N2_mols*R_u*tank_temp)/vapor_volume;
+        Z_factor = N2O_Z_fac(tank_pres);
+        N2O_pres = Z_factor*vapor_mass*R_N2O*tank_temp/vapor_volume;
+        tank_pres = N2_pres;
     end
-    tank_temp = tank_temp + d_temp; %cool tank (liquid technically)
-
-    %convert some liquid into vapor based on the output of vaporize function
-    liquid_mass = liquid_mass - new_vaporized;
-    vapor_mass = vapor_mass + new_vaporized;
-
-    %calculate new nitrogen volume, pressure and tank pressure
-    [~, rho_gas, vap_pres] = N2O_properties(tank_temp); %calculate new nitrous properties
-    vapor_volume = vapor_mass/rho_gas; %m3
-    N2_pres = (N2_mols*R_u*tank_temp)/vapor_volume;
-    tank_pres = N2_pres + vap_pres;
 
     %calculate fuel regression and fuel mass input
     port_area = pi * (port_diam/2)^2; %m2
@@ -401,7 +402,7 @@ while liquid_mass > 0.015 && vapor_mass > 0 && port_diam < chamber_OD && tank_pr
     [chamber_temp, burn_R, burn_gamma, burn_rho, c_Star] = combustion_props(chamber_pres, oxidizer_fuel_ratio, combustion_props_input);
     
     %calculate mass flow out and chamber pressure
-    flow_out = chamber_pres * throat_area / (c_Star);
+    flow_out = chamber_pres * throat_area / c_Star;
     chamber_pres = chamber_pres + dt*chamber_pres*((mass_flow-flow_out)/chamber_mass - (d_volume/chamber_volume));
     chamber_mass = chamber_mass + mass_flow*dt - flow_out*dt;
     chamber_volume = chamber_volume + d_volume*dt;
@@ -415,7 +416,7 @@ while liquid_mass > 0.015 && vapor_mass > 0 && port_diam < chamber_OD && tank_pr
     time = time+dt;
 
     if(last - liquid_mass > 0.01)
-        disp([time, d_mass/dt, 14.7*chamber_pres/101325, 14.7*tank_pres/101325, oxidizer_fuel_ratio])
+        disp([time, d_mass/dt, 14.7*chamber_pres/101325, 14.7*tank_pres/101325, chamber_mass])
         last = liquid_mass;
     end
 
@@ -433,6 +434,15 @@ while liquid_mass > 0.015 && vapor_mass > 0 && port_diam < chamber_OD && tank_pr
 
     impulse = impulse+thrust*dt;
     prop_used = prop_used + fuel_input+d_mass;
+end
+if(liquid_mass < 0.015)
+    disp('End Condition: ran out of liquid N2O')
+elseif(vapor_mass < 0)
+    disp('End Condition: N2O vapor negative')
+elseif(port_diam >= chamber_OD)
+    disp('End Condition: ran out of fuel')
+elseif(tank_pres <= chamber_pres)
+    disp('End Condition: backflow into tank')
 end
 disp(['Impulse (Ns): ', sprintf('%.2f',impulse)])
 disp(['ISP:', sprintf('%.2f',impulse/(prop_used*9.81))])
