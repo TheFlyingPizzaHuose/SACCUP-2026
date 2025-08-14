@@ -1,4 +1,7 @@
 clc
+jsonStr = fileread('Engine_Config.json');  % Read entire JSON file as text
+config = jsondecode(jsonStr);              % Parse JSON
+
 %====Thermo-physical properties====
 N2O_molar_mass = 0.044013; %kg/mol
 N2_molar_mass = 0.0280134; %kg/mol
@@ -12,13 +15,13 @@ Cv_N2 = Cp_N2 - R_u; %J/mol*K
 N2O_viscosity = 0.0003237; %dynamic viscosity Pa*s
 
 %====Fuel Properties====
-fuel_rho = 1180; %kg/m3
-fuel_a = 0.284; %PMMA1: 0.284, PMMA2: 0.087
-fuel_n = 0.335; %PMMA1: 0.335, PMMA2: 0.615 
+fuel_rho = config.fuel_rho; %kg/m3
+fuel_a = config.fuel_a; %PMMA1: 0.284, PMMA2: 0.087
+fuel_n = config.fuel_n; %PMMA1: 0.335, PMMA2: 0.615 
 
-%GSE dimensions
-inlet_pipe_length = 1; %meters
-inlet_pipe_diam = 0.5*0.0254; %meters
+%====inlet pipe dimensions====
+inlet_pipe_length = unit_match(config.pipe_length_m, config.pipe_length_in*0.0254); %meters
+inlet_pipe_diam = unit_match(config.pipe_ID_m, config.pipe_ID_in*0.0254); %meters
 inlet_pipe_area = pi * (inlet_pipe_diam /2)^2; % m^2
 supply_tank_volume = 0.045;
 
@@ -26,33 +29,35 @@ supply_tank_volume = 0.045;
 oriffice_diam = 0.03*0.0254; %meters
 orifice_area = pi * (oriffice_diam / 2)^2; % m^2
 
-tank_internal_diam = 3.5*0.0254; %meters
-tank_length = 8*0.3048; %meters
+tank_internal_diam = unit_match(config.tank_ID_m, config.tank_ID_in*0.0254); %meters
+tank_length = unit_match(config.tank_length_m, config.tank_length_in*0.0254); %meters
 tank_volume = tank_length*pi*(tank_internal_diam / 2)^2; %m^3
 
 %====Chamber dimensions====
-port_diam = 2*0.0254; %meters
-chamber_length = 2*0.3048; %meters
-chamber_OD = 3.5*0.0254; %meters
+port_diam = unit_match(config.grain_ID_m, config.grain_ID_in*0.0254); %meters
+chamber_length = unit_match(config.grain_length_m, config.grain_length_in*0.0254); %meters
+chamber_OD = unit_match(config.grain_OD_m, config.grain_OD_in*0.0254); %meters
 chamber_volume = pi * (port_diam/2)^2 * chamber_length;
+grain_volume = pi * ((chamber_OD/2)^2 - (port_diam/2)^2) * chamber_length;
+grain_mass = grain_volume * fuel_rho;
 
 %====Injector dimensions====
-injector_diam = 0.07*0.0254; %meters
-num_injectors = 61;
+injector_diam = unit_match(config.port_ID_m, config.port_ID_in*0.0254); %meters
+num_injectors = config.port_amount;
 injector_area = num_injectors * pi * (injector_diam / 2)^2; % m^2
 
 %====Nozzle dimensions====
-throat_diam = 1.33*0.0254; %meters
-exit_diam = 2.61*0.0254; %meters
+throat_diam = unit_match(config.throat_ID_m, config.throat_ID_in*0.0254); %meters
+exit_diam = unit_match(config.exit_ID_m, config.exit_ID_in*0.0254); %meters
 throat_area = pi * (throat_diam / 2)^2; % m^2
 exit_area = pi * (exit_diam / 2)^2; % m^2
 
 %====Leak dimensions -ugh.====
-leak_diam = 0.12;
-leak_area = pi*(0.0254*leak_diam/2)^2;
+leak_diam = unit_match(config.leak_ID_m, config.leak_ID_in*0.0254); %meters
+leak_area = pi*(leak_diam/2)^2;
 
 %====CEA INPUT====
-rawData = readlines('PMMA_CEA.txt');  % read each line as a string
+rawData = readlines(config.CEA_filename);  % read each line as a string
 
 % --- Get headers and clean whitespace ---
 firstLine = strtrim(rawData(3));                 % remove leading/trailing spaces
@@ -97,12 +102,13 @@ F_M     = griddedInterpolant(P_grid, O_grid, M_matrix);
 F_GAM   = griddedInterpolant(P_grid, O_grid, GAM_matrix);
 F_RHO   = griddedInterpolant(P_grid, O_grid, RHO_matrix);
 
-combustion_props_input = {F_T, F_GAM, F_M, F_RHO};
+combustion_props_input = {F_T, F_GAM, F_M, F_RHO, config.combustion_efficiency};
 function [T, R, gamma, rho, c_star] = combustion_props(pres_Pa, o_f_ratio, input_data)
     F_T = input_data{1};
     F_GAM = input_data{2};
     F_M = input_data{3};
     F_RHO = input_data{4};
+    eff = input_data{5};
     pres_psi = 14.7*pres_Pa/101325;
     T = F_T(o_f_ratio, pres_psi);
     R = 8314/F_M(o_f_ratio, pres_psi);
@@ -111,7 +117,7 @@ function [T, R, gamma, rho, c_star] = combustion_props(pres_Pa, o_f_ratio, input
     term1 = R*T/gamma;
     term2 = (gamma+1)/2;
     term3 = (gamma+1)/(gamma-1);
-    c_star = sqrt(term1*(term2^term3));
+    c_star = eff*sqrt(term1*(term2^term3));
 end
 
 %{
@@ -150,6 +156,14 @@ plot(ratios, temps100, 'm', 'LineWidth', 0.5);
 hold off;
 legend('600', '500', '400', '300', '200', '100');
 %}
+
+function out = unit_match(a, b)
+    if a ~= 0
+        out = a;
+    else
+        out = b;
+    end
+end
 
 function cham_pres = calc_cham_pres1(prev_pres, exit_pres, gam, rho, R, temp, m_dot, in_diam, throat_diam)
     choked_pres_ratio = (2/(gam+1))^(gam/(gam-1)); %exit pressure/inlet pressure
@@ -260,14 +274,25 @@ function P_loss = pipe_loss(rho, m_dot, A, L)
 end
 
 function [rho_liquid, rho_gas, vap_pres] = N2O_properties(temp)  
-    %====N2O liquid and gas properties at different temps====
+    %====N2O liquid and gas properties at different temps==== 
     T = [-30, -20, -15, -10, -5, 0, 5, 10, 15, 20, 25, 30, 35, 36.42]; %Celcius
-    P_vapor = [16, 18.01, 20.83, 23.97, 27.44, 31.27, 35.47, 40.07, 45.1, 50.6, 56.6, 63.15, 70.33, 72.51]; %Bar
-    rhos_liquid = [1000, 995.4, 975.2, 953.9, 931.4, 907.4, 881.6, 853.5, 822.2, 786.6, 743.9, 688.0, 589.4, 452.0]; %kg/m3
-    rhos_vapour  = [30, 46.82, 54.47, 63.21, 73.26, 84.86, 98.41, 114.5, 133.9, 158.1, 190.0, 236.7, 330.4, 452.0]; %kg/m3
-    rho_gas = interp1(T, rhos_vapour, temp-273.15);
-    rho_liquid = interp1(T, rhos_liquid, temp-273.15);
-    vap_pres = interp1(T, P_vapor, temp-273.15)*101325;
+    P_vapor = [16, 18.01, 20.83, 23.97, 27.44, 31.27, 35.47, 40.07, 45.1, 50.6, 56.6, 63.15, 70.33, 72.51]; %Bar 
+    rhos_liquid = [1000, 995.4, 975.2, 953.9, 931.4, 907.4, 881.6, 853.5, 822.2, 786.6, 743.9, 688.0, 589.4, 452.0]; %kg/m3 
+    rhos_vapour = [30, 46.82, 54.47, 63.21, 73.26, 84.86, 98.41, 114.5, 133.9, 158.1, 190.0, 236.7, 330.4, 452.0]; %kg/m3
+    
+    persistent F_P_vapor F_rhos_liquid F_rhos_vapour
+    if isempty(F_P_vapor)
+        F_P_vapor = griddedInterpolant(T, P_vapor);
+        F_rhos_liquid = griddedInterpolant(T, rhos_liquid);
+        F_rhos_vapour = griddedInterpolant(T, rhos_vapour);
+    end
+    
+    meow = temp - 273.15;
+
+    % Extract outputs
+    vap_pres   = F_P_vapor(meow) * 101325;  % Convert bar to Pa
+    rho_liquid = F_rhos_liquid(meow);
+    rho_gas    = F_rhos_vapour(meow);
 end
 
 function [heat_capacity, latent_heat] = N2O_latent_heat(temp)
@@ -284,7 +309,12 @@ end
 function Z = N2O_Z_fac(prev_pressure)
     pres_atm = [0, 10, 20, 30, 40, 50, 60, 70, 80];
     Zs = [1, 0.85, 0.78, 0.72, 0.65, 0.56, 0.49, 0.27, 0.2];
-    Z = interp1(pres_atm, Zs, prev_pressure/101325);
+
+    persistent F_Z
+    if isempty(F_Z)
+        F_Z = griddedInterpolant(pres_atm, Zs);
+    end
+    Z = F_Z(prev_pressure/101325);
 end
 
 function [liq_mass_new, gas_mass_new] = balance_rho(liq_mass, gas_mass, temp, volume, mol_N2, tank_pres)
@@ -311,7 +341,7 @@ function [liq_mass_new, gas_mass_new] = balance_rho(liq_mass, gas_mass, temp, vo
     end
 end
 
-function [d_temp, new_vaporized] = vaporize(old_gas_mass, new_gas_mass, liquid_mass, dt, temp, reset)
+function [d_temp, new_vaporized] = vaporize(old_gas_mass, new_gas_mass, liquid_mass, dt, temp, reset, vap_flag)
     persistent delay_vaporized;
     if isempty(delay_vaporized) || reset
         delay_vaporized = 0;
@@ -321,7 +351,11 @@ function [d_temp, new_vaporized] = vaporize(old_gas_mass, new_gas_mass, liquid_m
     %Cp = 1720; %J/kg*K https://rocketprops.readthedocs.io/en/latest/n2o_prop.html?
     A = (new_gas_mass-old_gas_mass);
     delay_vaporized = delay_vaporized + time_constant*(A-delay_vaporized);
-    new_vaporized = 0.01*delay_vaporized;
+    if vap_flag
+        new_vaporized = 0.01*delay_vaporized;
+    else
+        new_vaporized = delay_vaporized;
+    end
     heat = delay_vaporized*latent_heat;
     mew = liquid_mass-new_vaporized; %losing my mind here
     d_temp = -heat/(mew*Cp);
@@ -349,7 +383,7 @@ function mach=exit_mach(throat_area, exit_area, gamma)
     term3 = (gamma-1)/2;
     ratio2 = exit_area/throat_area;%throat_area/A*
     f2 = @(x) term2*((1+term3*x^2)^term1)/x - ratio2; %the zero of this function is the mach no at throat
-    mach = fzero(f2, 5);
+    mach = fzero(f2, [1,6]);
 end
 
 function [thrust, Pe]=calc_thrust(Pc, Pa, Tc, g, Rc, A_throat, A_exit, m_dot, cee_star)
@@ -373,13 +407,13 @@ function [thrust, Pe]=calc_thrust(Pc, Pa, Tc, g, Rc, A_throat, A_exit, m_dot, ce
 end
 
 %====sim loop vars====
-total = 7.514; %kg
-liquid_mass = 7.014; % Kg
-vapor_mass = total-liquid_mass; % Kg
+liquid_mass = unit_match(config.fuel_mass_kg, config.fuel_mass_lbm/2.2); % Kg
+start_mass = liquid_mass + grain_mass;
+vapor_mass = 0; % Kg
 prop_used = 0; %Kg
 prop_leak = 0; %Kg
 
-outside_temp = 273.15+5; % K
+outside_temp = unit_match(config.tank_temp_kelvin, config.tank_temp_rankine/1.8); % K
 tank_temp = outside_temp; % K
 
 N20_pres = 0; %Pa
@@ -387,7 +421,7 @@ N2_pres = 0; %Pa
 N2_mols = 0; %mol
 
 outside_pres = 101325; %Pa
-tank_pres = 612*101325/14.7; % Pa
+tank_pres = unit_match(config.tank_pres_Pa, config.tank_pres_psi*101325/14.7); % Pa
 chamber_pres = 101325; %Pa
 
 chamber_mass = chamber_volume*chamber_pres/(287*300); %Kg Ideal gas law with air
@@ -395,8 +429,9 @@ chamber_mass = chamber_volume*chamber_pres/(287*300); %Kg Ideal gas law with air
 impulse = 0; %Ns
 
 time = 0; % s
-dt = 10^-3; % s
+dt = config.time_step; % s
 
+%output arrays
 times = [];
 pressures = [];
 cham_presses = [];
@@ -425,7 +460,7 @@ last = time;
 P_loss = 0;
 
 %reset vaporize_condense internal variable
-vaporize(0, 0, 0, 0, 0, 1);
+vaporize(0, 0, 0, 0, 0, 1, 0);
 
 Z2 = 0;
 
@@ -435,13 +470,14 @@ steps = 0;
 while vapor_mass >= 0 && port_diam < chamber_OD && tank_pres > chamber_pres
     steps = steps+1;
     [rho_liquid, ~, vap_pres] = N2O_properties(tank_temp);
+    k = config.k_discharge_factor;
 
     %transfer mass from tank to chamber (check if liquid or vapor)
     if(liquid_mass <= 0.015)
         rho_out = (N2_mols*N2_molar_mass+vapor_mass)/tank_volume;
         rho_vapor = vapor_mass/tank_volume;
 
-        d_mass = dt*mass_in(rho_out, tank_pres, chamber_pres, injector_area, 2, tank_temp);%k=2 is based on aspire space experience
+        d_mass = dt*mass_in(rho_out, tank_pres, chamber_pres, injector_area, k, tank_temp);%k=2 is based on aspire space experience
         
         N20_N2_ratio = vapor_mass/(N2_mols*N2_molar_mass+vapor_mass);
         vapor_mass = vapor_mass - N20_N2_ratio*d_mass; 
@@ -453,12 +489,12 @@ while vapor_mass >= 0 && port_diam < chamber_OD && tank_pres > chamber_pres
     else
         rho_vapor = vapor_mass/tank_volume;
         inject_pres = tank_pres - P_loss;
-        d_mass = dt*mass_in(rho_liquid, inject_pres, chamber_pres, injector_area, 2, tank_temp);%k=2 is based on aspire space experience
-        P_loss = 0.5*P_loss + 0.5*pipe_loss(rho_liquid, d_mass/dt, inlet_pipe_area, 2);
+        d_mass = dt*mass_in(rho_liquid, inject_pres, chamber_pres, injector_area, k, tank_temp);%k=2 is based on aspire space experience
+        P_loss = 0.5*P_loss + 0.5*pipe_loss(rho_liquid, d_mass/dt, inlet_pipe_area, inlet_pipe_length);
         liquid_mass = liquid_mass - d_mass; 
 
         %leak tank
-        leak_mass = dt*mass_in(rho_liquid, tank_pres, 101325, leak_area, 2, tank_temp);%k=2 is based on aspire space experience
+        leak_mass = dt*mass_in(rho_liquid, tank_pres, 101325, leak_area, k, tank_temp);%k=2 is based on aspire space experience
         liquid_mass = liquid_mass - leak_mass; 
 
         prop_leak = prop_leak + leak_mass; %Kg
@@ -496,7 +532,7 @@ while vapor_mass >= 0 && port_diam < chamber_OD && tank_pres > chamber_pres
         tank_pres = N2_pres+N2O_pres;
     else %if gas pres is lower than vap pres, then boil nitrous to regain vap pressure
         [liq_mass_new, gas_mass_new] = balance_rho(liquid_mass, vapor_mass, tank_temp, tank_volume, N2_mols, vap_pres); %calculate new mass fractions of liquid vs gas in tank
-        [d_temp, new_vaporized] = vaporize(vapor_mass, gas_mass_new, liquid_mass, dt, tank_temp, 0); %calculate temp reduced from vaporization of liquid into gas
+        [d_temp, new_vaporized] = vaporize(vapor_mass, gas_mass_new, liquid_mass, dt, tank_temp, 0, config.allow_N2O_vaporization); %calculate temp reduced from vaporization of liquid into gas
     
         tank_temp = tank_temp + d_temp; %cool the tank (the liquid technically)
 
@@ -536,7 +572,7 @@ while vapor_mass >= 0 && port_diam < chamber_OD && tank_pres > chamber_pres
     [chamber_temp, burn_R, burn_gamma, burn_rho, c_Star] = combustion_props(chamber_pres, oxidizer_fuel_ratio, combustion_props_input);
     
     %calculate mass flow out and new chamber pressure
-    flow_out = 0.9*chamber_pres * throat_area / c_Star; %0.9 is the discharge coefficient for conical nozzle
+    flow_out = config.discharge_coeff*chamber_pres * throat_area / c_Star; %0.9 is the discharge coefficient for conical nozzle
     chamber_pres = chamber_pres + dt*chamber_pres*((mass_flow-flow_out)/chamber_mass - (d_volume/chamber_volume));
     chamber_mass = chamber_mass + mass_flow*dt - flow_out*dt;
     chamber_volume = chamber_volume + d_volume*dt;
@@ -546,7 +582,7 @@ while vapor_mass >= 0 && port_diam < chamber_OD && tank_pres > chamber_pres
 
     %calculate thrust
     [thrust, Pe] = calc_thrust(chamber_pres, outside_pres, chamber_temp, burn_gamma, burn_R, throat_area, exit_area, flow_out, c_Star);
-    thrust = 0.7*thrust; %divergence losses
+    thrust = config.nozzle_efficiency*thrust; %divergence losses
     
     time = time+dt;
 
@@ -564,7 +600,7 @@ while vapor_mass >= 0 && port_diam < chamber_OD && tank_pres > chamber_pres
     pressures = [pressures, 14.7*tank_pres/101325];
     cham_presses = [cham_presses, 14.7*chamber_pres/101325];
     of_ratios_record = [of_ratios_record, oxidizer_fuel_ratio];
-    thrusts = [thrusts, thrust/4.448];
+    thrusts = [thrusts, thrust];
     exit_presses = [exit_presses, 14.7*Pe/101325];
     pipe_losses = [pipe_losses, 14.7*P_loss/101325];
 
@@ -588,6 +624,20 @@ disp(['Impulse (Ns): ', sprintf('%.2f',impulse), ' || ISP: ', ...
 disp(['Propellant mass used (Kg): ', sprintf('%.3f',prop_used), ...
       ' || Final grain ID (in): ', sprintf('%.3f',port_diam/0.0254), ...
       ' || Propellant mass leaked (Kg): ', sprintf('%.3f',prop_leak)])
+
+fid = fopen([config.eng_name, '.eng'],'w');  %open output engine file
+fprintf(fid, [config.eng_name, ' ', ...
+              config.eng_diam, ' ', ...
+              config.eng_length, ' ', ...
+              config.eject_delay, ' ', ...
+              sprintf('%.0f',(start_mass-prop_used)), ' ', ...
+              sprintf('%.0f',(start_mass)), ' AT\n']); %write header of engine file
+i = 1;
+while i < length(times)
+    fprintf(fid, ['   ', sprintf('%.3f', times(i)), ' ', sprintf('%.0f', thrusts(i)), '\n']);
+    i=i+1;
+end
+fclose(fid);
 
 figure;
 subplot(2, 3, 1);
@@ -625,7 +675,7 @@ thrust2 = thrust2.*(800/2);
 subplot(2,3,3);
 plot(time2, thrust2, 'r', 'LineWidth', 1.5);
 hold on;
-plot(times, thrusts, 'g', 'LineWidth', 0.5);
+plot(times, thrusts./4.448, 'g', 'LineWidth', 0.5);
 hold off;
 legend('Experiment', 'Simulation');
 xlabel('Time (s)');
