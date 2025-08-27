@@ -1,0 +1,15 @@
+  /*
+  Saint Louis University Rocket Propulsion Laboratory (SLURPL)
+  Avionics Main Code
+  Authors: Leiana Mendoza,
+
+  All pertinent information for this code is in document(s) linked below.
+  This includes all references and credits to the autors of code that is
+  used in this program such as libraries.
+  
+  */
+
+  #include <SoftwareSerial.h>
+  #include <iostream>
+  #include "Adafruit_BMP085.h"
+  #include <Adafruit_BMP280.h>
