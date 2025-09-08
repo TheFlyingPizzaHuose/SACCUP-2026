@@ -139,16 +139,16 @@ string bitsOfUnsigned(R x, int width) {
 }
 temple <typename T>
 T intoBinary(T placeHolder) {
-    if constexpr (is_integral_v<T>) {
+    if constexpr (is_integral_v<placeHolder>) {
         using R = make_unsigned_t<T>; //unsigned is better for binary
-        return bitsOfUnsigned((R)value, sizeof(T) * 8);
-    } else if constexpr (is_floating_point_v<T>) {
-        using R = conditional_t<sizeof(T) == 4, uint32_t,
-                conditional_t<sizeof(T) == 8, unit64_t,
+        return bitsOfUnsigned((R)value, sizeof(placeHolder) * 8);
+    } else if constexpr (is_floating_point_v<placeHolder>) {
+        using R = conditional_t<sizeof(placeHolder) == 4, uint32_t,
+                conditional_t<sizeof(placeHolder) == 8, unit64_t,
                 __uint128_t>>;
         R bits = 0;
-        memcpy(&bits, &value, sizeof(T));
-        return bitsOfUnsigned(bits, sizeof(T) * 8);
+        memcpy(&bits, &value, sizeof(placeHolder));
+        return bitsOfUnsigned(bits, sizeof(placeHolder) * 8);
     } else {
         Serial.println("Array requested too large");
         setErr(PRGM_ERR);
