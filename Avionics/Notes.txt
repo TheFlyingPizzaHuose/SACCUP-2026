@@ -1,0 +1,6 @@
+Notes for Updates + Tasks
+
+9.30.2025
+- Rewrite readyPacket with vector list
+  - resizable lists!!
+- See how to do communicated between computers
