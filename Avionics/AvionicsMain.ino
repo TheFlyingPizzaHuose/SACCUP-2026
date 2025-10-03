@@ -9,13 +9,44 @@
   
   */
 
-  #include <SoftwareSerial.h>
+  #include <SoftwareSerial.h>    //UART Library
+  #include <Wire.h>              // I2C library
+  #include <SPI.h>               // SPI library
+  #include <SD.h>                // SD card library
+  #include <Adafruit_BMP085.h>   // BMP 085 or 180 pressure sensor library
+  #include <Adafruit_BMP280.h>   // BMP 280 pressure sensor library
+  #include <Adafruit_MPU6050.h>  // MPU6050 accelerometer sensor library
+  #include <Adafruit_Sensor.h>   // Adafruit unified sensor library
+  #include <Adafruit_LSM9DS1.h>  // Include LSM9DS1 library
+  #include <Adafruit_ADXL375.h>  // Include ADXL375 library
+  #include <Adafruit_INA219.h>   // Include INA 219 library
+  #include <RH_RF95.h>           // Include RFM9X library
   #include <iostream>
-  #include "Adafruit_BMP085.h"
-  #include <Adafruit_BMP280.h>
-  #include <iostream>
+  #include <cmath>
   #include <map>
+  #include <EEPROM.h>
+  #include <uRTCLib.h>          //Include Real Time Clock Library
+  #include <time.h>
   using namespace std;
+
+// Defining Variables
+  #define AS5600_ADDR 0x36
+  #define RAW_ANGLE_REG 0x0C
+
+  #define BMP_SCL 13
+  #define BMP_SDO 12
+  #define BMP_SDA 11
+
+//UART Serial Objects
+  #define rfSerial Serial1
+  #define gpsSerial Serial2
+
+//RFM9x pin assignments
+  #define RFM95_CS 10
+  #define RFM95_INT 9
+  #define RFM95_RST 26
+// Change to 434.0 or other frequency, must match RX's freq!
+  #define RF95_FREQ 433.0
 
 
 map<string, bool> errorStatus;
