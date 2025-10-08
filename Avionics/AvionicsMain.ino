@@ -71,8 +71,8 @@ static sensors_event_t LSM_acc, LSM_gyro, LSM_mag, LSM_temp;
 
 // GPS Variables
 int gpsVersion = 2; //SAM-M8Q
-unit gpsStats, glonasStats, gallileoStats = 0, 0, 0;
-unit8_t[] setGSVON[] = {0xB5, 0x62, 0x06, 0x01, 0x08, 0x00, 0xF0, 0x03, 0x01, 0x01, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00}; // Calculates checkSum
+uint gpsStats, glonasStats, gallileoStats = 0, 0, 0;
+uint8_t[] setGSVON[] = {0xB5, 0x62, 0x06, 0x01, 0x08, 0x00, 0xF0, 0x03, 0x01, 0x01, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00}; // Calculates checkSum
 uint8_t[] setGSVOFF[] = {0xB5, 0x62, 0x06, 0x01, 0x08, 0x00, 0xF0, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x03, 0x39};
 
 // AV Modes
@@ -113,6 +113,42 @@ errorStatus.insert({"PRGM_ERROR", false},
                    {"INA219_FAIL", false},
                    {"ACCEL_CALLIB", false},
                    {"MAG_CALLIB", false});
+
+// Component cycle time miscros
+uint ADXL345RATE = 350,
+     AS5600RATE = 150,
+     BMP180RATE = 5500, // Ultra low: 5.5, Low: 7.5, Standard: 11.5, High: 19.5, Ultra high: 37.5
+     BMP280RATE = 5500, // Ultra low: 3, Standard: 5, High: 9, Ultra high: 17, Adv. High: 51
+     DYNSTARTRATE = 100000,
+     LSMRATE = 1500,
+     MPU6050RATE = 125,
+     RFDRATE = 44983,   // Prime number near 45ms
+     RFMRATE = 50000,
+     SAMM8QRATE = 100000,
+     SDRATE = 10000,
+     STATUSRATE = 10000;
+
+// Component last cycle time micros
+uint ADXL245LAST = 0,
+     AS5600LAST = 0,
+     BMP280LAST = 0,
+     BMP180LAST = 0,
+     DYNSTARTLAST = 0,
+     SAMM8QLAST = 0,
+     LSMLAST = 0,
+     MPU6050 = 0,
+     RFDLAST = 0,
+     RFMLAST = 0,
+     SDLAST = 0;
+
+// Time variables
+uint8_t timeLaunch = 0,
+        timeMillis = 0,
+        lastMiscros = 0;
+float timeSinceLaunch = 0;
+
+// Start variables
+
 
 void printErr()
 {
