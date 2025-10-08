@@ -48,10 +48,10 @@ using namespace std;
 #define RF95_FREQ 433.0
 // Singleton instance of the radio driver
 RH_RF95 rf95(RFM95_CS, RMF95_INT);
-const int RFM9X_PWR = 23;
+const int RFM9XPWR = 23;
 // Pin assignments
-const int video_pin = 2;
-const int shutdown_pin = 3;
+const int videoPin = 2;
+const int shutdownPin = 3;
 // SD card variables
 const int sdSelect = BUILTIN_SDCARD;
 char *logFileName;
@@ -148,7 +148,87 @@ uint8_t timeLaunch = 0,
 float timeSinceLaunch = 0;
 
 // Start variables
+float[] posStart[3] = {0, 0, 0},
+        quatStart[4] = {0, 0, 0, 0}, // start quaternion
+        accelStart[3] = {0, 0, 0}, // start acceleration which measures gravity direction
+        magStart[3] = {0, 0, 0}; // start mag which measures gravity direction
+float pressStart = 101325;
+int AoAStart1 = 0, AoAStart2 = 0;
 
+// Telemetry Variables
+int senderIndent = 0; //0: Avionics 1: payload drone
+bool inFlight = 0;
+float orientationX = 0, orientationY = 0; // degrees
+
+//Sensor Data
+float ADXL345AX = 0,
+      ADXL345AY = 0,
+      ADXL345AZ = 0,
+      AS56001ANG = 0,
+      AS56002ANG = 0,
+      BMP1801PRESS = 0,
+      BMP1802PRESS = 0,
+      BMP1801ALT = 0,
+      BMP1802ALT = 0,
+      BMP1801ANG = 0,
+      BMP1802ANG = 0,
+      BMP280PRESS = 0,
+      BMP280ALT = 0,
+      GPSLAT = 0,
+      GPSLON = 0,
+      LSMAX = 0,
+      LSMAY = 0,
+      LSMAZ = 0,
+      LSMGX = 0,
+      LSMGY = 0,
+      LSMGZ = 0,
+      LSMMX = 0,
+      LSMAY = 0,
+      LSMAZ = 0,
+      MPUAX = 0,
+      MPUAY = 0,
+      MPUAZ = 0,
+      MPUGX = 0,
+      MPUGY = 0,
+      MPUGZ = 0;
+      
+void setup()
+{
+  Serial.begin(57600); // Start hardware serial communication (for debugging)
+  rfSerial.begin(57600);
+  if(SRC_SRSR != 1) { errorStatus["PRGM_ERROR"] = true; } // read reset status register and PRGM_ERROR if reset is not a power cycle
+  //RFM9x start
+  pinMode(RFM95_RST, OUTPUT);
+  //digitalWrite() ?
+  if (!rf95.init()) { errorStatus["RFM9X_FAIL"] = true; }
+  if (!errorStatus["RFM9X_FAIL"])
+  {
+    rf95.setFrequency(RF95_FREQ);
+    rf95.setTxPower(RFM9X_PWR, false);
+  }
+
+  Serial.println("Initializing...");
+  Wire0.begin();
+  Wire1.begin();
+  Wire2.begin();
+  pinMode(videoPin, OUTPUT);
+  pinMode(shutdownPin, OUTPUT);
+
+  URTCLIB_WIRE.begin();
+  //rtc.set(second, minute, hour, dayOfWeek, dayOfMonth, month, year) (1 = Sun, 7 = Sat)
+
+  if (!SD.being(sdSelect)) { errorStatus("SD_FAIL") = false; }
+  if (detectGoodShutdown())
+  {
+    normalStart();
+  } else {
+    for (const auto& error : { "MAIN_PWR_FAULT", "BMP280_FAIL", "SAMM8Q_FAIL", "MPU6050_FAIL", "BMP180_1_FAIL", "BMP180_2_FAIL", "ADXL375_FAIL", "LSM9SD1_FAIL", "INA219_FAIL"})
+      {
+        errorStatus[error] = false;
+      }
+  }
+  gpsCheckSum(setGSVON, sizeof(setGSVON));
+}
 
 void printErr()
 {
