@@ -191,6 +191,11 @@ float ADXL345AX = 0,
       MPUGX = 0,
       MPUGY = 0,
       MPUGZ = 0;
+
+// loop variables
+uint8_t lastGPSByte = 0;
+bool recordBool = 0;
+int recordCount = 0, temp = 0;
       
 void setup()
 {
@@ -228,6 +233,41 @@ void setup()
       }
   }
   gpsCheckSum(setGSVON, sizeof(setGSVON));
+}
+
+void presStartSample(float pres, bool reset = 0)
+{
+  static int count = 0, startTime = 0;
+  static float average = 101345;
+  if (reset)
+  {
+    count = 0;
+    average = 101345;
+    startTime = millis();
+  } else if (millis() - startTime < 1000) // only sample for 1000ms
+  {
+    average = (average * count + pres) / (count + 1);
+    Serial.println(average);
+    count++;
+  } else
+  {
+    presStart = average;
+  }
+}
+
+void loop()
+{
+  if (shutdownCheck[0] == 0xff && shutdownCheck[1] == 0xff && shutdownCheck[2] == 0xff)
+  {
+    digitalWrite(shutdownPin, HIGH);
+  } else if (!errorStatus.equal_range(MAIN_PWR_FAULT)->second) {
+    if (micros() < lastMicros)
+    {
+      BMP280_LAST = SAMM8Q_LAST = MPU6050_LAST = BMP180_LAST = AS5600_LAST = LSM_LAST = SD_LAST = STATUS_LAST = 0;
+    }
+    readRFD();
+    readRFM();
+  }
 }
 
 void printErr()
