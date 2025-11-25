@@ -212,7 +212,7 @@ void setup() {
   //===SD Card INIT===
   if (!SD.begin(SD_CS)) { error_status["SD_FAIL"] = true; }  //Init SD, this comes first to be able to check the latest log file
   logfile = SD.open(check_file_on_SD(), FILE_WRITE);  //Opens new file with highest index
-
+  /*
   //===RFM9x RADIO INIT===
   pinMode(RFM95_RST, OUTPUT);
   Serial.println("Reset RFM9x");
@@ -222,7 +222,7 @@ void setup() {
   delay(10);
   digitalWrite(RFM95_RST, LOW);
   delay(10);
-  
+  */
   if (!rf95.init()){
     Serial.println("init failed");
     error_status["RFM9X_FAIL"] = true; 
