@@ -110,22 +110,25 @@ const uint32_t num_samples = 10000;
 const uint32_t num_samples = 100;
 #endif
 
-const uint8_t pressure_1_pin = A1;
+const uint8_t pressure_1_pin = A3;
 const float press_1_R1 = 680; //Ohm
 const float press_1_R2 = 330; //Ohm
-const float pressure_1_max = 2500; //PSI
-const float press_1_ratio = pressure_1_max*(press_1_R1+press_1_R2)/press_1_R2;
+const float pressure_max = 2500; //PSI
+const float press_1_ratio = (press_1_R1+press_1_R2)/(press_1_R2);
+const float pressure_1_min_volt = 0.5/press_1_ratio;
+const float pressure_1_max_volt = 4.5/press_1_ratio-pressure_1_min_volt;
 
 const uint8_t pressure_2_pin = A2;
 const float press_2_R1 = 680; //Ohm
 const float press_2_R2 = 330; //Ohm
-const float pressure_2_max = 2500; //PSI
-const float press_2_ratio = pressure_1_max*(press_2_R1+press_2_R2)/press_2_R2;
+const float press_2_ratio = (press_2_R1+press_2_R2)/(press_2_R2);
+const float pressure_2_min_volt = 0.5/press_2_ratio;
+const float pressure_2_max_volt = 4.5/press_2_ratio-pressure_2_min_volt;
 
-const uint8_t temp_1_pin = A3;
+const uint8_t temp_1_pin = A8;
 const float temp_1_R = 47800; //Ohm
 
-const uint8_t temp_2_pin = A4;
+const uint8_t temp_2_pin = A7;
 const float temp_2_R = 46500; //Ohm
 //===============Dynamic Variables===============
 char* log_file_name;
@@ -210,7 +213,12 @@ void setup() {
   Serial.println(SRC_SRSR);
   if(SRC_SRSR != 1){}// Read reset status register and PRGM_ERR if reset is not a power cycle
   //===SD Card INIT===
-  if (!SD.begin(SD_CS)) { error_status["SD_FAIL"] = true; }  //Init SD, this comes first to be able to check the latest log file
+  if (false && !SD.begin(SD_CS)) { 
+    error_status["SD_FAIL"] = true; 
+    Serial.println("SD fail");
+  }else{
+    Serial.println("SD init sucess");
+  }  //Init SD, this comes first to be able to check the latest log file
   logfile = SD.open(check_file_on_SD(), FILE_WRITE);  //Opens new file with highest index
   /*
   //===RFM9x RADIO INIT===
@@ -224,10 +232,10 @@ void setup() {
   delay(10);
   */
   if (!rf95.init()){
-    Serial.println("init failed");
+    Serial.println("RFM9x fail");
     error_status["RFM9X_FAIL"] = true; 
   }else{
-    Serial.println("init sucess");
+    Serial.println("RFM9x init sucess");
     rf95.setFrequency(GSE_FREQ);
     rf95.setTxPower(RFM95_PWR, false);
   }
@@ -238,8 +246,12 @@ void setup() {
   scale.tare();
 
   //===ADC0 SETUP===
+  pinMode(pressure_1_pin, INPUT);
+  pinMode(pressure_2_pin, INPUT);
+  pinMode(temp_1_pin, INPUT);
+  pinMode(temp_2_pin, INPUT);
   adc->adc0->setAveraging(16);                                    // set number of averages
-  adc->adc0->setResolution(10);                                   // set bits of resolution
+  adc->adc0->setResolution(16);                                   // set bits of resolution
   adc->adc0->setConversionSpeed(ADC_CONVERSION_SPEED::MED_SPEED); // change the conversion speed
   adc->adc0->setSamplingSpeed(ADC_SAMPLING_SPEED::MED_SPEED);     // change the sampling speed
   adc->adc0->recalibrate();
@@ -258,7 +270,7 @@ void loop()
 {
   read_RFM();
   read_load_cell();
-  
+  read_pressure_1();
 }
 //==========COMMAND CODE==========Alleon Oxales
 void perform_command(uint8_t msg_class, uint8_t msg_id){
@@ -276,12 +288,13 @@ void perform_command(uint8_t msg_class, uint8_t msg_id){
 void read_load_cell(){
   if(!error_status["HX711_FAIL"] && (micros()-HX711_last_time > HX711_rate)){
     load_cell_output = scale.get_units(10); //Take 10 average samples and submit weight
+    logfile.print(micros());
+    logfile.print("|5|");
+    logfile.println(load_cell_output);
+    //Serial.print("|5|");
+    //Serial.println(load_cell_output);
+    HX711_last_time = micros();
   }
-  logfile.print(micros());
-  logfile.print("|5|");
-  logfile.println(load_cell_output);
-  Serial.print("|5|");
-  Serial.println(load_cell_output);
 }
 void tare_load_cell(){
   scale.tare();
@@ -305,17 +318,22 @@ float read_voltage(uint8_t pin) {//Kartik Function to read true voltage from a v
   return Vout;
 }
 void read_pressure_1(){//Alleon Oxales
-  float voltage = read_voltage(pressure_1_pin);
-  pressure_1_output = press_1_ratio*voltage;
-  logfile.print(micros());
-  logfile.print("|1|");
-  logfile.println(pressure_1_output);
-  Serial.print("|1|");
-  Serial.println(pressure_1_output);
+  if(micros()-Pressure_last_time > Pres_rate){
+    float voltage = read_voltage(pressure_1_pin);
+    pressure_1_output = 2500*(voltage-pressure_1_min_volt)/pressure_1_max_volt;
+    logfile.print(micros());
+    logfile.print("|1|");
+    logfile.println(pressure_1_output);
+    Serial.print("|1|");
+    Serial.print(voltage);
+    Serial.print("||");
+    Serial.println(pressure_1_output);
+    Pressure_last_time = micros();
+  }
 }
 void read_pressure_2(){//Alleon Oxales
   float voltage = read_voltage(pressure_2_pin);
-  pressure_2_output = press_2_ratio*voltage;
+  pressure_1_output = 2500*(voltage-pressure_2_min_volt)/pressure_2_max_volt;
   logfile.print(micros());
   logfile.print("|2|");
   logfile.println(pressure_2_output);
