@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Rocket Telemetry Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        body {
+            background: #0b0e14;
+            color: #e6e6e6;
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .card {
+            background: #111827;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .value {
+            font-size: 28px;
+            font-weight: bold;
+        }
+        .log {
+            background: #020617;
+            padding: 10px;
+            height: 140px;
+            overflow-y: auto;
+            font-family: monospace;
+            border-radius: 6px;
+            margin-bottom: 20px;
+        }
+        .charts {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+        }
+        canvas {
+            background: #020617;
+            border-radius: 8px;
+            padding: 10px;
+        }
+    </style>
+</head>
+
+<body>
+
+<h2>Rocket Telemetry – Mission Control</h2>
+
+<!-- Single Readouts -->
+<div class="grid">
+    <div class="card">Pressure<div class="value" id="pressure">--</div></div>
+    <div class="card">Temperature<div class="value" id="temperature">--</div></div>
+    <div class="card">Altitude<div class="value" id="altitude">--</div></div>
+    <div class="card">Battery<div class="value" id="battery">--</div></div>
+</div>
+
+<!-- Continuous Telemetry Log -->
+<div class="log" id="telemetryLog"></div>
+
+<!-- Graphs -->
+<div class="charts">
+    <canvas id="altitudeChart"></canvas>
+    <canvas id="pressureChart"></canvas>
+    <canvas id="temperatureChart"></canvas>
+    <canvas id="batteryChart"></canvas>
+</div>
+
+<script>
+const MAX_POINTS = 30;
+let labels = [];
+
+let altitudeData = [];
+let pressureData = [];
+let temperatureData = [];
+let batteryData = [];
+
+function createChart(canvasId, label, dataArray) {
+    const ctx = document.getElementById(canvasId).getContext("2d");
+    return new Chart(ctx, {
+        type: "line",
+        data: {
+            labels: labels,
+            datasets: [{
+                label: label,
+                data: dataArray,
+                borderWidth: 2,
+                tension: 0.2
+            }]
+        },
+        options: {
+            animation: false,
+            scales: {
+                x: { ticks: { color: "#aaa" } },
+                y: { ticks: { color: "#aaa" } }
+            }
+        }
+    });
+}
+
+const altitudeChart = createChart("altitudeChart", "Altitude (m)", altitudeData);
+const pressureChart = createChart("pressureChart", "Pressure (bar)", pressureData);
+const temperatureChart = createChart("temperatureChart", "Temperature (°C)", temperatureData);
+const batteryChart = createChart("batteryChart", "Battery Voltage (V)", batteryData);
+
+async function updateTelemetry() {
+    const res = await fetch("/telemetry");
+    const data = await res.json();
+
+    // Single readouts
+    document.getElementById("pressure").innerText = data.pressure + " bar";
+    document.getElementById("temperature").innerText = data.temperature + " °C";
+    document.getElementById("altitude").innerText = data.altitude + " m";
+    document.getElementById("battery").innerText = data.battery + " V";
+
+    // Continuous log
+    const log = document.getElementById("telemetryLog");
+    log.innerHTML += `[${data.timestamp}] `
+        + `P=${data.pressure} `
+        + `T=${data.temperature} `
+        + `Alt=${data.altitude} `
+        + `Bat=${data.battery}<br>`;
+    log.scrollTop = log.scrollHeight;
+
+    // Time axis
+    labels.push(data.timestamp);
+    altitudeData.push(data.altitude);
+    pressureData.push(data.pressure);
+    temperatureData.push(data.temperature);
+    batteryData.push(data.battery);
+
+    if (labels.length > MAX_POINTS) {
+        labels.shift();
+        altitudeData.shift();
+        pressureData.shift();
+        temperatureData.shift();
+        batteryData.shift();
+    }
+
+    altitudeChart.update();
+    pressureChart.update();
+    temperatureChart.update();
+    batteryChart.update();
+}
+
+setInterval(updateTelemetry, 1000);
+</script>
+
+</body>
+</html>
