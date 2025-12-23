@@ -166,9 +166,6 @@
     
 </div>
 
-<div class="main">
-    <!-- Left: charts + log -->
-    <div class="left">
 
 <!-- Continuous Telemetry Log -->
 
@@ -180,55 +177,6 @@
     <div class="chart-container"><canvas id="pressureChart"></canvas></div>
     <div class="chart-container"><canvas id="temperatureChart"></canvas></div>
     <div class="chart-container"><canvas id="batteryChart"></canvas></div>
-</div>
-
-</div>
-<!-- Right: telemetry definition panel (name left, datatype right) -->
-    <aside class="telemetry-def" aria-labelledby="telemetryDefTitle">
-        <h3 id="telemetryDefTitle">Telemetry Definitions</h3>
-        <div class="type-legend">
-            <div class="legend-pill">5 = float</div>
-            <div class="legend-pill">2 = Boolean</div>
-        </div>
-
-<div class="telemetry-list">
-            <!-- Position / Velocity / Orientation (floats) -->
-            <div class="telemetry-row"><div class="telemetry-name">pos_x</div><div class="telemetry-type">float</div></div>
-            <div class="telemetry-row"><div class="telemetry-name">pos_y</div><div class="telemetry-type">float</div></div>
-            <div class="telemetry-row"><div class="telemetry-name">pos_z</div><div class="telemetry-type">float</div></div>
-
-            <div class="telemetry-row"><div class="telemetry-name">vel_x</div><div class="telemetry-type">float</div></div>
-            <div class="telemetry-row"><div class="telemetry-name">vel_y</div><div class="telemetry-type">float</div></div>
-            <div class="telemetry-row"><div class="telemetry-name">vel_z</div><div class="telemetry-type">float</div></div>
-            <div class="telemetry-row"><div class="telemetry-name">theta</div><div class="telemetry-type">float</div></div>
-            <div class="telemetry-row"><div class="telemetry-name">phi</div><div class="telemetry-type">float</div></div>
-
-            <div class="telemetry-row"><div class="telemetry-name">q_w</div><div class="telemetry-type">float</div></div>
-            <div class="telemetry-row"><div class="telemetry-name">q_x</div><div class="telemetry-type">float</div></div>
-            <div class="telemetry-row"><div class="telemetry-name">q_y</div><div class="telemetry-type">float</div></div>
-            <div class="telemetry-row"><div class="telemetry-name">q_z</div><div class="telemetry-type">float</div></div>
-
-            <!-- Primary sensors -->
-            <div class="telemetry-row"><div class="telemetry-name">altitude</div><div class="telemetry-type">float</div></div>
-            <div class="telemetry-row"><div class="telemetry-name">pressure</div><div class="telemetry-type">float</div></div>
-            <div class="telemetry-row"><div class="telemetry-name">temperature</div><div class="telemetry-type">float</div></div>
-            <div class="telemetry-row"><div class="telemetry-name">battery</div><div class="telemetry-type">float</div></div>
-
-            <!-- Tanks, lines, load cell -->
-            <div class="telemetry-row"><div class="telemetry-name">supply_tank_temp</div><div class="telemetry-type">float</div></div>
-            <div class="telemetry-row"><div class="telemetry-name">rocket_tank_temp</div><div class="telemetry-type">float</div></div>
-            <div class="telemetry-row"><div class="telemetry-name">n2o_line_pressure</div><div class="telemetry-type">float</div></div>
-            <div class="telemetry-row"><div class="telemetry-name">n2_line_pressure</div><div class="telemetry-type">float</div></div>
-            <div class="telemetry-row"><div class="telemetry-name">load_cell_reading</div><div class="telemetry-type">float</div></div>
-
-            <!-- Boolean valve/state telemetry -->
-            <div class="telemetry-row"><div class="telemetry-name">n2o_valve_state</div><div class="telemetry-type">Boolean</div></div>
-            <div class="telemetry-row"><div class="telemetry-name">n2_valve_state</div><div class="telemetry-type">Boolean</div></div>
-            <div class="telemetry-row"><div class="telemetry-name">relief_valve_state</div><div class="telemetry-type">Boolean</div></div>
-            <div class="telemetry-row"><div class="telemetry-name">quick_disconnect_state</div><div class="telemetry-type">Boolean</div></div>
-            <div class="telemetry-row"><div class="telemetry-name">clamshell_state</div><div class="telemetry-type">Boolean</div></div>
-        </div>
-    </aside>
 </div>
 
 <script>
