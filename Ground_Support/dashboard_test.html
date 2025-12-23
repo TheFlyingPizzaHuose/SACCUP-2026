@@ -5,103 +5,60 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <style>
-        body {
+     html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            overflow: hidden; 
             background: #0b0e14;
             color: #e6e6e6;
             font-family: Arial, sans-serif;
-            margin: 20px;
         }
-        .grid {
+        .page {
             display: grid;
-            grid-template-columns: repeat(7, 1fr);
-            gap: 15px;
-            margin-bottom: 20px;
+            grid-template-rows: calc(100vh - 260px) 260px; 
+            gap: 12px;
+            padding: 12px;
+            box-sizing: border-box;
+            height: 100%;
+        }
+        .top {
+            display: grid;
+            grid-template-columns: 500px 1fr; 
+            gap: 12px;
+            align-items: stretch;
+            min-height: 0; 
+        }
+       .readouts {
+            background: linear-gradient(180deg,#0f1724,#0b0e14);
+            border-radius: 8px;
+            padding: 10px;
+            box-sizing: border-box;
+
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+
+            height: 100%;          
+            overflow-y: auto;      
+            overflow-x: hidden;    
         }
         .card {
             background: #111827;
             padding: 15px;
             border-radius: 8px;
-            text-align: center;
+            text-align: center;  
+        }
+        .card .label {
+            font-size: 11px;
+            color: #bbb;
+            margin-bottom: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
         }
         .value {
             font-size: 28px;
             font-weight: bold;
-        }
-        /* main area: left = charts+log, right = telemetry defs */
-        .main {
-            display: grid;
-            grid-template-columns: 1fr 300px; /* telemetry definitions column fixed */
-            gap: 12px;
-            align-items: start;
-        }
-        /* telemetry definitions panel */
-        .telemetry-def {
-            background: var(--card);
-            padding: 10px;
-            border-radius: 8px;
-            max-height: calc(100vh - 220px);
-            overflow: auto;
-        }
-        .telemetry-def h3 {
-            margin: 0 0 8px 0;
-            font-size: 16px;
-        }
-
-        .type-legend {
-            display: flex;
-            gap: 8px;
-            align-items: center;
-            font-size: 13px;
-            color: var(--muted);
-            margin-bottom: 8px;
-        }
-        .legend-pill {
-            background: #0f1724;
-            border-radius: 4px;
-            padding: 4px 8px;
-            font-weight: 600;
-            color: var(--muted);
-            font-size: 12px;
-        }
-
-        .telemetry-list {
-            display: grid;
-            gap: 6px;
-            grid-auto-rows: minmax(26px, auto);
-        }
-
-        .telemetry-row {
-            display: grid;
-            grid-template-columns: 1fr 48px;
-            gap: 8px;
-            align-items: center;
-            padding: 6px;
-            border-radius: 6px;
-            background: rgba(255,255,255,0.01);
-            font-size: 13px;
-        }
-        .telemetry-name {
-            color: #e6e6e6;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-            padding-right: 6px;
-        }
-
-        .telemetry-type {
-            text-align: center;
-            font-weight: 700;
-            color: var(--muted);
-            background: #071028;
-            border-radius: 4px;
-            padding: 4px 6px;
-            border: 1px solid rgba(255,255,255,0.03);
-        }
-
-        /* log + charts column */
-        .left {
-            display: grid;
-            gap: 10px;
         }
         .log {
             background: #020617;
@@ -121,63 +78,75 @@
         background: #020617;
         border-radius: 8px;
         padding: 6px;
-        height: 350px;  
+        height: 400px;  
         }
-        canvas {
+        .log {
             background: #020617;
+            padding: 12px;
             border-radius: 8px;
-            padding: 20px;
+            font-family: monospace;
+            box-sizing: border-box;
+            overflow: auto; 
+            height: 100%;
+            color: #cbd5e1;
+            font-size: 13px;
+            line-height: 1.35;
+        }
+        @media (max-width: 1200px) {
+            .page { grid-template-rows: calc(100vh - 320px) 320px; }
+            .top { grid-template-columns: 300px 1fr; }
+            .value { font-size: 13px; }
         }
     </style>
 </head>
 
 <body>
 
-<h2>Rocket Telemetry – Mission Control</h2>
-
 <!-- Single Readouts -->
-<div class="grid">
-    <div class="card">Pressure<div class="value" id="pressure">--</div></div>
-    <div class="card">Temperature<div class="value" id="temperature">--</div></div>
-    <div class="card">Altitude<div class="value" id="altitude">--</div></div>
-    <div class="card">Battery<div class="value" id="battery">--</div></div>
+<div class="page">
+        <div class="top">
+            <!-- Left: compact readouts -->
+            <div class="readouts" id="readoutsGrid">
+                <div class="card"><div class="label">Pressure</div><div class="value" id="pressure">--</div></div>
+                <div class="card"><div class="label">Temperature</div><div class="value" id="temperature">--</div></div>
+                <div class="card"><div class="label">Altitude</div><div class="value" id="altitude">--</div></div>
+                <div class="card"><div class="label">Battery</div><div class="value" id="battery">--</div></div>
 
-    <div class="card">Pos X<div class="value" id="pos_x">--</div></div>
-    <div class="card">Pos Y<div class="value" id="pos_y">--</div></div>
-    <div class="card">Pos Z<div class="value" id="pos_z">--</div></div>
+                <div class="card"><div class="label">Pos X</div><div class="value" id="pos_x">--</div></div>
+                <div class="card"><div class="label">Pos Y</div><div class="value" id="pos_y">--</div></div>
+                <div class="card"><div class="label">Pos Z</div><div class="value" id="pos_z">--</div></div>
+                <div class="card"><div class="label">Vel X</div><div class="value" id="vel_x">--</div></div>
 
-    <div class="card">Vel X<div class="value" id="vel_x">--</div></div>
-    <div class="card">Vel Y<div class="value" id="vel_y">--</div></div>
-    <div class="card">Vel Z<div class="value" id="vel_z">--</div></div>
+                <div class="card"><div class="label">Vel Y</div><div class="value" id="vel_y">--</div></div>
+                <div class="card"><div class="label">Vel Z</div><div class="value" id="vel_z">--</div></div>
+                <div class="card"><div class="label">Theta</div><div class="value" id="theta">--</div></div>
+                <div class="card"><div class="label">Phi</div><div class="value" id="phi">--</div></div>
 
-    <div class="card">Theta<div class="value" id="theta">--</div></div>
-    <div class="card">Phi<div class="value" id="phi">--</div></div>
+                <div class="card"><div class="label">Quat W</div><div class="value" id="q_w">--</div></div>
+                <div class="card"><div class="label">Quat X</div><div class="value" id="q_x">--</div></div>
+                <div class="card"><div class="label">Quat Y</div><div class="value" id="q_y">--</div></div>
+                <div class="card"><div class="label">Quat Z</div><div class="value" id="q_z">--</div></div>
 
-    <div class="card">Quat W<div class="value" id="q_w">--</div></div>
-    <div class="card">Quat X<div class="value" id="q_x">--</div></div>
-    <div class="card">Quat Y<div class="value" id="q_y">--</div></div>
-    <div class="card">Quat Z<div class="value" id="q_z">--</div></div>
+                <div class="card"><div class="label">N₂O Valve</div><div class="value" id="n2o_valve">--</div></div>
+                <div class="card"><div class="label">N₂ Valve</div><div class="value" id="n2_valve">--</div></div>
+                <div class="card"><div class="label">Relief</div><div class="value" id="relief_valve">--</div></div>
+                <div class="card"><div class="label">QD</div><div class="value" id="quick_disconnect">--</div></div>
 
-    <div class="card">N₂O Valve<div class="value" id="n2o_valve">--</div></div>
-    <div class="card">N₂ Valve<div class="value" id="n2_valve">--</div></div>
-    <div class="card">Relief<div class="value" id="relief_valve">--</div></div>
-    <div class="card">QD<div class="value" id="quick_disconnect">--</div></div>
-    <div class="card">Clamshell<div class="value" id="clamshell">--</div></div>
+                <div class="card" style="grid-column: span 2;"><div class="label">Clamshell</div><div class="value" id="clamshell">--</div></div>
+            </div>
+
+            <!-- Right: 2x2 charts -->
+            <div class="charts">
+                <div class="chart-container"><canvas id="altitudeChart"></canvas></div>
+                <div class="chart-container"><canvas id="pressureChart"></canvas></div>
+                <div class="chart-container"><canvas id="temperatureChart"></canvas></div>
+                <div class="chart-container"><canvas id="batteryChart"></canvas></div>
+            </div>
+        </div>
     
-</div>
-
-
-<!-- Continuous Telemetry Log -->
-
-<div class="log" id="telemetryLog"></div>
-
-<!-- Graphs -->
-<div class="charts">
-    <div class="chart-container"><canvas id="altitudeChart"></canvas></div>
-    <div class="chart-container"><canvas id="pressureChart"></canvas></div>
-    <div class="chart-container"><canvas id="temperatureChart"></canvas></div>
-    <div class="chart-container"><canvas id="batteryChart"></canvas></div>
-</div>
+        <!-- Bottom: telemetry log -->
+        <div class="log" id="telemetryLog"></div>
+    </div>
 
 <script>
 const MAX_POINTS = 30;
@@ -197,28 +166,32 @@ function createChart(canvasId, label, dataArray) {
             datasets: [{
                 label: label,
                 data: dataArray,
-                borderWidth: 2,
-                tension: 0.2
+                borderWidth: 1,
+                tension: 0.2,
+                pointRadius: 0
             }]
         },
-        options: {
-        responsive: true,
-        maintainAspectRatio: false,  // REQUIRED
-        animation: false,
-        plugins: {
-        legend: {
-        labels: { color: "#aaa", font: { size: 11 } }
+       options: {
+            responsive: true,
+            maintainAspectRatio: false,  
+            animation: false,
+            plugins: {
+                legend: {
+                    labels: { color: "#aaa", font: { size: 11 } }
+                }
+            },
+            scales: {
+                x: {
+                    ticks: { color: "#aaa", maxTicksLimit: 6 },
+                    grid: { color: "transparent" }
+                },
+                y: {
+                    ticks: { color: "#aaa" },
+                    grid: { color: "rgba(255,255,255,0.03)" }
+                }
+            },
+            interaction: { intersect: false, mode: 'index' }
         }
-    },
-    scales: {
-        x: {
-            ticks: { color: "#aaa", maxTicksLimit: 5 }
-        },
-        y: {
-            ticks: { color: "#aaa" }
-        }
-    }
-}
     });
 }
 const altitudeChart = createChart("altitudeChart", "Altitude (m)", altitudeData);
