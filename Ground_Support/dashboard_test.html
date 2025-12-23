@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Rocket Telemetry Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        body {
+            background: #0b0e14;
+            color: #e6e6e6;
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .card {
+            background: #111827;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .value {
+            font-size: 28px;
+            font-weight: bold;
+        }
+        /* main area: left = charts+log, right = telemetry defs */
+        .main {
+            display: grid;
+            grid-template-columns: 1fr 300px; /* telemetry definitions column fixed */
+            gap: 12px;
+            align-items: start;
+        }
+        /* telemetry definitions panel */
+        .telemetry-def {
+            background: var(--card);
+            padding: 10px;
+            border-radius: 8px;
+            max-height: calc(100vh - 220px);
+            overflow: auto;
+        }
+        .telemetry-def h3 {
+            margin: 0 0 8px 0;
+            font-size: 16px;
+        }
+
+        .type-legend {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            font-size: 13px;
+            color: var(--muted);
+            margin-bottom: 8px;
+        }
+        .legend-pill {
+            background: #0f1724;
+            border-radius: 4px;
+            padding: 4px 8px;
+            font-weight: 600;
+            color: var(--muted);
+            font-size: 12px;
+        }
+
+        .telemetry-list {
+            display: grid;
+            gap: 6px;
+            grid-auto-rows: minmax(26px, auto);
+        }
+
+        .telemetry-row {
+            display: grid;
+            grid-template-columns: 1fr 48px;
+            gap: 8px;
+            align-items: center;
+            padding: 6px;
+            border-radius: 6px;
+            background: rgba(255,255,255,0.01);
+            font-size: 13px;
+        }
+        .telemetry-name {
+            color: #e6e6e6;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            padding-right: 6px;
+        }
+
+        .telemetry-type {
+            text-align: center;
+            font-weight: 700;
+            color: var(--muted);
+            background: #071028;
+            border-radius: 4px;
+            padding: 4px 6px;
+            border: 1px solid rgba(255,255,255,0.03);
+        }
+
+        /* log + charts column */
+        .left {
+            display: grid;
+            gap: 10px;
+        }
+        .log {
+            background: #020617;
+            padding: 10px;
+            height: 140px;
+            overflow-y: auto;
+            font-family: monospace;
+            border-radius: 6px;
+            margin-bottom: 20px;
+        }
+       .charts {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr); 
+        gap: 10px;
+        }
+        .chart-container {
+        background: #020617;
+        border-radius: 8px;
+        padding: 6px;
+        height: 350px;  
+        }
+        canvas {
+            background: #020617;
+            border-radius: 8px;
+            padding: 20px;
+        }
+    </style>
+</head>
+
+<body>
+
+<h2>Rocket Telemetry – Mission Control</h2>
+
+<!-- Single Readouts -->
+<div class="grid">
+    <div class="card">Pressure<div class="value" id="pressure">--</div></div>
+    <div class="card">Temperature<div class="value" id="temperature">--</div></div>
+    <div class="card">Altitude<div class="value" id="altitude">--</div></div>
+    <div class="card">Battery<div class="value" id="battery">--</div></div>
+
+    <div class="card">Pos X<div class="value" id="pos_x">--</div></div>
+    <div class="card">Pos Y<div class="value" id="pos_y">--</div></div>
+    <div class="card">Pos Z<div class="value" id="pos_z">--</div></div>
+
+    <div class="card">Vel X<div class="value" id="vel_x">--</div></div>
+    <div class="card">Vel Y<div class="value" id="vel_y">--</div></div>
+    <div class="card">Vel Z<div class="value" id="vel_z">--</div></div>
+
+    <div class="card">Theta<div class="value" id="theta">--</div></div>
+    <div class="card">Phi<div class="value" id="phi">--</div></div>
+
+    <div class="card">Quat W<div class="value" id="q_w">--</div></div>
+    <div class="card">Quat X<div class="value" id="q_x">--</div></div>
+    <div class="card">Quat Y<div class="value" id="q_y">--</div></div>
+    <div class="card">Quat Z<div class="value" id="q_z">--</div></div>
+
+    <div class="card">N₂O Valve<div class="value" id="n2o_valve">--</div></div>
+    <div class="card">N₂ Valve<div class="value" id="n2_valve">--</div></div>
+    <div class="card">Relief<div class="value" id="relief_valve">--</div></div>
+    <div class="card">QD<div class="value" id="quick_disconnect">--</div></div>
+    <div class="card">Clamshell<div class="value" id="clamshell">--</div></div>
+    
+</div>
+
+<div class="main">
+    <!-- Left: charts + log -->
+    <div class="left">
+
+<!-- Continuous Telemetry Log -->
+
+<div class="log" id="telemetryLog"></div>
+
+<!-- Graphs -->
+<div class="charts">
+    <div class="chart-container"><canvas id="altitudeChart"></canvas></div>
+    <div class="chart-container"><canvas id="pressureChart"></canvas></div>
+    <div class="chart-container"><canvas id="temperatureChart"></canvas></div>
+    <div class="chart-container"><canvas id="batteryChart"></canvas></div>
+</div>
+
+</div>
+<!-- Right: telemetry definition panel (name left, datatype right) -->
+    <aside class="telemetry-def" aria-labelledby="telemetryDefTitle">
+        <h3 id="telemetryDefTitle">Telemetry Definitions</h3>
+        <div class="type-legend">
+            <div class="legend-pill">5 = float</div>
+            <div class="legend-pill">2 = Boolean</div>
+        </div>
+
+<div class="telemetry-list">
+            <!-- Position / Velocity / Orientation (floats) -->
+            <div class="telemetry-row"><div class="telemetry-name">pos_x</div><div class="telemetry-type">float</div></div>
+            <div class="telemetry-row"><div class="telemetry-name">pos_y</div><div class="telemetry-type">float</div></div>
+            <div class="telemetry-row"><div class="telemetry-name">pos_z</div><div class="telemetry-type">float</div></div>
+
+            <div class="telemetry-row"><div class="telemetry-name">vel_x</div><div class="telemetry-type">float</div></div>
+            <div class="telemetry-row"><div class="telemetry-name">vel_y</div><div class="telemetry-type">float</div></div>
+            <div class="telemetry-row"><div class="telemetry-name">vel_z</div><div class="telemetry-type">float</div></div>
+            <div class="telemetry-row"><div class="telemetry-name">theta</div><div class="telemetry-type">float</div></div>
+            <div class="telemetry-row"><div class="telemetry-name">phi</div><div class="telemetry-type">float</div></div>
+
+            <div class="telemetry-row"><div class="telemetry-name">q_w</div><div class="telemetry-type">float</div></div>
+            <div class="telemetry-row"><div class="telemetry-name">q_x</div><div class="telemetry-type">float</div></div>
+            <div class="telemetry-row"><div class="telemetry-name">q_y</div><div class="telemetry-type">float</div></div>
+            <div class="telemetry-row"><div class="telemetry-name">q_z</div><div class="telemetry-type">float</div></div>
+
+            <!-- Primary sensors -->
+            <div class="telemetry-row"><div class="telemetry-name">altitude</div><div class="telemetry-type">float</div></div>
+            <div class="telemetry-row"><div class="telemetry-name">pressure</div><div class="telemetry-type">float</div></div>
+            <div class="telemetry-row"><div class="telemetry-name">temperature</div><div class="telemetry-type">float</div></div>
+            <div class="telemetry-row"><div class="telemetry-name">battery</div><div class="telemetry-type">float</div></div>
+
+            <!-- Tanks, lines, load cell -->
+            <div class="telemetry-row"><div class="telemetry-name">supply_tank_temp</div><div class="telemetry-type">float</div></div>
+            <div class="telemetry-row"><div class="telemetry-name">rocket_tank_temp</div><div class="telemetry-type">float</div></div>
+            <div class="telemetry-row"><div class="telemetry-name">n2o_line_pressure</div><div class="telemetry-type">float</div></div>
+            <div class="telemetry-row"><div class="telemetry-name">n2_line_pressure</div><div class="telemetry-type">float</div></div>
+            <div class="telemetry-row"><div class="telemetry-name">load_cell_reading</div><div class="telemetry-type">float</div></div>
+
+            <!-- Boolean valve/state telemetry -->
+            <div class="telemetry-row"><div class="telemetry-name">n2o_valve_state</div><div class="telemetry-type">Boolean</div></div>
+            <div class="telemetry-row"><div class="telemetry-name">n2_valve_state</div><div class="telemetry-type">Boolean</div></div>
+            <div class="telemetry-row"><div class="telemetry-name">relief_valve_state</div><div class="telemetry-type">Boolean</div></div>
+            <div class="telemetry-row"><div class="telemetry-name">quick_disconnect_state</div><div class="telemetry-type">Boolean</div></div>
+            <div class="telemetry-row"><div class="telemetry-name">clamshell_state</div><div class="telemetry-type">Boolean</div></div>
+        </div>
+    </aside>
+</div>
+
+<script>
+const MAX_POINTS = 30;
+let labels = [];
+
+let altitudeData = [];
+let pressureData = [];
+let temperatureData = [];
+let batteryData = [];
+
+function createChart(canvasId, label, dataArray) {
+    const ctx = document.getElementById(canvasId).getContext("2d");
+    return new Chart(ctx, {
+        type: "line",
+        data: {
+            labels: labels,
+            datasets: [{
+                label: label,
+                data: dataArray,
+                borderWidth: 2,
+                tension: 0.2
+            }]
+        },
+        options: {
+        responsive: true,
+        maintainAspectRatio: false,  // REQUIRED
+        animation: false,
+        plugins: {
+        legend: {
+        labels: { color: "#aaa", font: { size: 11 } }
+        }
+    },
+    scales: {
+        x: {
+            ticks: { color: "#aaa", maxTicksLimit: 5 }
+        },
+        y: {
+            ticks: { color: "#aaa" }
+        }
+    }
+}
+    });
+}
+const altitudeChart = createChart("altitudeChart", "Altitude (m)", altitudeData);
+const pressureChart = createChart("pressureChart", "Pressure (bar)", pressureData);
+const temperatureChart = createChart("temperatureChart", "Temperature (°C)", temperatureData);
+const batteryChart = createChart("batteryChart", "Battery Voltage (V)", batteryData);
+
+async function updateTelemetry() {
+    const res = await fetch("/telemetry");
+    const data = await res.json();
+
+    // Single readouts
+    document.getElementById("pressure").innerText = data.pressure + " bar";
+    document.getElementById("temperature").innerText = data.temperature + " °C";
+    document.getElementById("altitude").innerText = data.altitude + " m";
+    document.getElementById("battery").innerText = data.battery + " V";
+    document.getElementById("pos_x").innerText = data.pos_x;
+    document.getElementById("pos_y").innerText = data.pos_y;
+    document.getElementById("pos_z").innerText = data.pos_z;
+    document.getElementById("vel_x").innerText = data.vel_x + " m/s";
+    document.getElementById("vel_y").innerText = data.vel_y + " m/s";
+    document.getElementById("vel_z").innerText = data.vel_z + " m/s";
+    document.getElementById("theta").innerText = data.theta + " °";
+    document.getElementById("phi").innerText = data.phi + " °";
+    document.getElementById("q_w").innerText = data.q_w;
+    document.getElementById("q_x").innerText = data.q_x;
+    document.getElementById("q_y").innerText = data.q_y;
+    document.getElementById("q_z").innerText = data.q_z;
+    document.getElementById("n2o_valve").innerText = data.n2o_valve_state ? "Open" : "Closed";
+    document.getElementById("n2_valve").innerText = data.n2_valve_state ? "Open" : "Closed";
+    document.getElementById("relief_valve").innerText = data.relief_valve_state ? "Open" : "Closed";
+    document.getElementById("quick_disconnect").innerText = data.quick_disconnect_state ? "Engaged" : "Disengaged";
+    document.getElementById("clamshell").innerText = data.clamshell_state ? "Open" : "Closed";
+    
+    // Continuous log
+    const log = document.getElementById("telemetryLog");
+    log.innerHTML += `[${data.timestamp}] `
+        + `P=${data.pressure} `
+        + `T=${data.temperature} `
+        + `Alt=${data.altitude} `
+        + `Bat=${data.battery}<br>`;
+    log.scrollTop = log.scrollHeight;
+
+    // Time axis
+    labels.push(data.timestamp);
+    altitudeData.push(data.altitude);
+    pressureData.push(data.pressure);
+    temperatureData.push(data.temperature);
+    batteryData.push(data.battery);
+
+    if (labels.length > MAX_POINTS) {
+        labels.shift();
+        altitudeData.shift();
+        pressureData.shift();
+        temperatureData.shift();
+        batteryData.shift();
+    }
+
+    altitudeChart.update();
+    pressureChart.update();
+    temperatureChart.update();
+    batteryChart.update();
+}
+
+setInterval(updateTelemetry, 50);
+</script>
+
+</body>
+</html>
