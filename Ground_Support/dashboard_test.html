@@ -5,98 +5,94 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <style>
-     html, body {
-            height: 100%;
-            margin: 0;
-            padding: 0;
-            overflow: hidden; 
-            background: #0b0e14;
-            color: #e6e6e6;
-            font-family: Arial, sans-serif;
-        }
-        .page {
-            display: grid;
-            grid-template-rows: calc(100vh - 260px) 260px; 
-            gap: 12px;
-            padding: 12px;
-            box-sizing: border-box;
-            height: 100%;
-        }
-        .top {
-            display: grid;
-            grid-template-columns: 500px 1fr; 
-            gap: 12px;
-            align-items: stretch;
-            min-height: 0; 
-        }
-       .readouts {
-            background: linear-gradient(180deg,#0f1724,#0b0e14);
-            border-radius: 8px;
-            padding: 10px;
-            box-sizing: border-box;
+    html, body {
+    height: 100%;
+    margin: 0;
+    overflow: hidden;
+    background: #0b0e14;
+    color: #e6e6e6;
+    font-family: Arial, sans-serif;
+}
+.page {
+    height: 100vh;
+    display: grid;
+    grid-template-rows: 72fr 28fr; /* top vs bottom ratio */
+    gap: 1vh;
+    padding: 1vh;
+    box-sizing: border-box;
+}
+.top {
+    display: grid;
+    grid-template-columns: 15fr 70fr; /* readouts vs charts */
+    gap: 1vh;
+    min-height: 0;
+}
+.readouts {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.1vh;
+    padding: 1vh;
+    border-radius: 1vh;
+    background: #0f1724;
 
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 8px;
+    min-height: 0;
+    overflow-y: auto; /* scroll ONLY if absolutely required */
+}
+.card {
+    background: #111827;
+    border-radius: 0.5vh;
+    padding: 0.8vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-height: 4.5vh;
+}
+.card .label {
+    font-size: clamp(9px, 0.9vw, 12px);
+    color: #9ca3af;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+.value {
+    font-size: clamp(12px, 1.4vw, 20px);
+    font-weight: 700;
+    line-height: 1.1;
+}
+.charts {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    grid-template-rows: repeat(2, 1fr);
+    gap: 1vh;
+    min-height: 0;
+}
+.chart-container {
+    background: #020617;
+    border-radius: 0.6vh;
+    padding: 0.8vh;
+    min-height: 0;
+}
+canvas {
+    width: 100% !important;
+    height: 100% !important;
+}
+.log {
+    background: #020617;
+    border-radius: 0.6vh;
+    padding: 1vh;
+    font-family: monospace;
+    font-size: clamp(11px, 1vw, 14px);
+    overflow: auto;
+    min-height: 0;
+}
+.value.state-open {
+    color: #22c55e;            /* green */
+    text-shadow: 0 0 6px rgba(34,197,94,0.4);
+}
+.value.state-closed {
+    color: #ef4444;            /* red */
+    text-shadow: 0 0 6px rgba(239,68,68,0.35);
+}
 
-            height: 100%;          
-            overflow-y: auto;      
-            overflow-x: hidden;    
-        }
-        .card {
-            background: #111827;
-            padding: 15px;
-            border-radius: 8px;
-            text-align: center;  
-        }
-        .card .label {
-            font-size: 11px;
-            color: #bbb;
-            margin-bottom: 4px;
-            text-transform: uppercase;
-            letter-spacing: 0.6px;
-        }
-        .value {
-            font-size: 28px;
-            font-weight: bold;
-        }
-        .log {
-            background: #020617;
-            padding: 10px;
-            height: 140px;
-            overflow-y: auto;
-            font-family: monospace;
-            border-radius: 6px;
-            margin-bottom: 20px;
-        }
-       .charts {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr); 
-        gap: 10px;
-        }
-        .chart-container {
-        background: #020617;
-        border-radius: 8px;
-        padding: 6px;
-        height: 400px;  
-        }
-        .log {
-            background: #020617;
-            padding: 12px;
-            border-radius: 8px;
-            font-family: monospace;
-            box-sizing: border-box;
-            overflow: auto; 
-            height: 100%;
-            color: #cbd5e1;
-            font-size: 13px;
-            line-height: 1.35;
-        }
-        @media (max-width: 1200px) {
-            .page { grid-template-rows: calc(100vh - 320px) 320px; }
-            .top { grid-template-columns: 300px 1fr; }
-            .value { font-size: 13px; }
-        }
     </style>
 </head>
 
@@ -220,12 +216,19 @@ async function updateTelemetry() {
     document.getElementById("q_x").innerText = data.q_x;
     document.getElementById("q_y").innerText = data.q_y;
     document.getElementById("q_z").innerText = data.q_z;
-    document.getElementById("n2o_valve").innerText = data.n2o_valve_state ? "Open" : "Closed";
-    document.getElementById("n2_valve").innerText = data.n2_valve_state ? "Open" : "Closed";
-    document.getElementById("relief_valve").innerText = data.relief_valve_state ? "Open" : "Closed";
-    document.getElementById("quick_disconnect").innerText = data.quick_disconnect_state ? "Engaged" : "Disengaged";
-    document.getElementById("clamshell").innerText = data.clamshell_state ? "Open" : "Closed";
-    
+
+function setState(id, isOpen, openText = "Open", closedText = "Closed") {
+const el = document.getElementById(id);
+    el.textContent = isOpen ? openText : closedText;
+    el.classList.toggle("state-open", isOpen);
+    el.classList.toggle("state-closed", !isOpen);
+}
+    setState("n2o_valve", data.n2o_valve_state);
+    setState("n2_valve", data.n2_valve_state);
+    setState("relief_valve", data.relief_valve_state);
+    setState("quick_disconnect", data.quick_disconnect_state, "Engaged", "Disengaged");
+    setState("clamshell", data.clamshell_state);
+
     // Continuous log
     const log = document.getElementById("telemetryLog");
     log.innerHTML += `[${data.timestamp}] `
