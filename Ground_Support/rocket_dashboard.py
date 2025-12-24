@@ -4,8 +4,11 @@ import random
 import threading
 import serial
 import serial.tools.list_ports  # optional, for listing ports
-from flask import Flask, jsonify, render_template
+from flask import Flask, jsonify, render_template, Response
+import struct
 import serial.tools.list_ports
+
+start_time = time.time()
 
 lock = threading.Lock() #prevents race conditions on the data variable
 data = []
@@ -66,20 +69,26 @@ def serial_thread():
 
 @app.route("/")
 def index():
-    return render_template("dashboard.html")
+    return render_template("dashboard_test.html")
 
 @app.route("/telemetry")
 def telemetry():
     my_data = []; #a place to copy the data so the lock is only held for a short time
     with lock: #avoid race condition with serial_thread
         my_data = data
-    return jsonify({
+    '''return jsonify({
         "timestamp": time.strftime("%H:%M:%S"),
         "pressure": round(random.uniform(20, 80), 2),
         "temperature": round(random.uniform(30, 120), 2),
         "altitude": round(random.uniform(0, 2500), 2),
         "battery": round(random.uniform(10.5, 12.6), 2)
-    })
+    })'''
+    temp_data = [(time.time()-start_time), random.uniform(0, 1000), random.uniform(0, 1000), random.uniform(0, 1000)]
+    binary_data = struct.pack(str(len(temp_data))+"f", *temp_data)
+    return Response(
+        binary_data,
+        mimetype = "application/octet-stream"
+    )
 
 def run_flask():
     app.run(host="0.0.0.0", port=4000)

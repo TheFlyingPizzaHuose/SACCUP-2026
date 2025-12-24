@@ -41,20 +41,20 @@
 .card {
     background: #111827;
     border-radius: 0.5vh;
-    padding: 0.8vh;
+    /*padding: 0.8vh;*/
     display: flex;
     flex-direction: column;
     justify-content: center;
     min-height: 4.5vh;
 }
 .card .label {
-    font-size: clamp(9px, 0.9vw, 12px);
+    font-size: clamp(1px, 0.9vw, 12px);
     color: #9ca3af;
     letter-spacing: 0.04em;
     text-transform: uppercase;
 }
 .value {
-    font-size: clamp(12px, 1.4vw, 20px);
+    font-size: clamp(1px, 1.4vw, 20px);
     font-weight: 700;
     line-height: 1.1;
 }
@@ -197,25 +197,26 @@ const batteryChart = createChart("batteryChart", "Battery Voltage (V)", batteryD
 
 async function updateTelemetry() {
     const res = await fetch("/telemetry");
-    const data = await res.json();
+    const buf = await res.arrayBuffer();
+    const data = new Float32Array(buf);
 
     // Single readouts
-    document.getElementById("pressure").innerText = data.pressure + " bar";
-    document.getElementById("temperature").innerText = data.temperature + " °C";
-    document.getElementById("altitude").innerText = data.altitude + " m";
-    document.getElementById("battery").innerText = data.battery + " V";
-    document.getElementById("pos_x").innerText = data.pos_x;
-    document.getElementById("pos_y").innerText = data.pos_y;
-    document.getElementById("pos_z").innerText = data.pos_z;
-    document.getElementById("vel_x").innerText = data.vel_x + " m/s";
-    document.getElementById("vel_y").innerText = data.vel_y + " m/s";
-    document.getElementById("vel_z").innerText = data.vel_z + " m/s";
-    document.getElementById("theta").innerText = data.theta + " °";
-    document.getElementById("phi").innerText = data.phi + " °";
-    document.getElementById("q_w").innerText = data.q_w;
-    document.getElementById("q_x").innerText = data.q_x;
-    document.getElementById("q_y").innerText = data.q_y;
-    document.getElementById("q_z").innerText = data.q_z;
+    document.getElementById("pos_x").innerText = data[1].toFixed(2);
+    document.getElementById("pos_y").innerText = data[2].toFixed(2);
+    document.getElementById("pos_z").innerText = data[3].toFixed(2);
+    document.getElementById("vel_x").innerText = data[0].toFixed(2) + " m/s";
+    document.getElementById("vel_y").innerText = data[0].toFixed(2) + " m/s";
+    document.getElementById("vel_z").innerText = data[0].toFixed(2) + " m/s";
+    document.getElementById("q_w").innerText = data[0].toFixed(2);
+    document.getElementById("q_x").innerText = data[0].toFixed(2);
+    document.getElementById("q_y").innerText = data[0].toFixed(2);
+    document.getElementById("q_z").innerText = data[0].toFixed(2);
+    document.getElementById("temperature").innerText = data[0].toFixed(2) + " °C";
+    document.getElementById("pressure").innerText = data[0].toFixed(2) + " bar";
+    document.getElementById("altitude").innerText = data[0].toFixed(2) + " m";
+    document.getElementById("battery").innerText = data[0].toFixed(2) + " V";
+    document.getElementById("theta").innerText = data[0].toFixed(2) + " °";
+    document.getElementById("phi").innerText = data[0].toFixed(2) + " °";
 
 function setState(id, isOpen, openText = "Open", closedText = "Closed") {
 const el = document.getElementById(id);
@@ -223,27 +224,27 @@ const el = document.getElementById(id);
     el.classList.toggle("state-open", isOpen);
     el.classList.toggle("state-closed", !isOpen);
 }
-    setState("n2o_valve", data.n2o_valve_state);
-    setState("n2_valve", data.n2_valve_state);
-    setState("relief_valve", data.relief_valve_state);
-    setState("quick_disconnect", data.quick_disconnect_state, "Engaged", "Disengaged");
-    setState("clamshell", data.clamshell_state);
+    setState("n2o_valve", 0);
+    setState("n2_valve", 0);
+    setState("relief_valve", 0);
+    setState("quick_disconnect", 0, "Engaged", "Disengaged");
+    setState("clamshell", 0);
 
     // Continuous log
     const log = document.getElementById("telemetryLog");
-    log.innerHTML += `[${data.timestamp}] `
-        + `P=${data.pressure} `
-        + `T=${data.temperature} `
-        + `Alt=${data.altitude} `
-        + `Bat=${data.battery}<br>`;
+    log.innerHTML += `[${data[0]}] `
+        + `P=${data[0]} `
+        + `T=${data[0]} `
+        + `Alt=${data[0]} `
+        + `Bat=${data[0]}<br>`;
     log.scrollTop = log.scrollHeight;
 
     // Time axis
-    labels.push(data.timestamp);
-    altitudeData.push(data.altitude);
-    pressureData.push(data.pressure);
-    temperatureData.push(data.temperature);
-    batteryData.push(data.battery);
+    labels.push(data[0]);
+    altitudeData.push(data[0]);
+    pressureData.push(data[0]);
+    temperatureData.push(data[0]);
+    batteryData.push(data[0]);
 
     if (labels.length > MAX_POINTS) {
         labels.shift();
