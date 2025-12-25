@@ -231,27 +231,27 @@ const el = document.getElementById(id);
     setState("quick_disconnect", 0, "Engaged", "Disengaged");
     setState("clamshell", 0, "Open", "Closed");
 
-    document.getElementById("temperature").innerText = data[19].toFixed(2) + " °C";
-    document.getElementById("pressure").innerText = data[20].toFixed(2) + " bar";
-    document.getElementById("altitude").innerText = data[21].toFixed(2) + " m";
-    document.getElementById("battery").innerText = data[22].toFixed(2) + " V";
+    document.getElementById("temperature").innerText = data[14].toFixed(2) + " °C";
+    document.getElementById("pressure").innerText = data[15].toFixed(2) + " bar";
+    document.getElementById("altitude").innerText = data[16].toFixed(2) + " m";
+    document.getElementById("battery").innerText = data[17].toFixed(2) + " V";
 
     // Continuous log
     const log = document.getElementById("telemetryLog");
     log.innerHTML += 
         `[${data[0]}] `
-        + `P=${data[20]} `
-        + `T=${data[19]} `
-        + `Alt=${data[21]} `
-        + `Bat=${data[22]}<br>`;
+        + `P=${data[15]} `
+        + `T=${data[14]} `
+        + `Alt=${data[16]} `
+        + `Bat=${data[17]}<br>`;
     log.scrollTop = log.scrollHeight;
 
     // Time axis
     labels.push(data[0]);
-    altitudeData.push(data[21]);
-    pressureData.push(data[20]);
-    temperatureData.push(data[19]);
-    batteryData.push(data[22]);
+    altitudeData.push(data[16]);
+    pressureData.push(data[15]);
+    temperatureData.push(data[14]);
+    batteryData.push(data[17]);
 
     if (labels.length > MAX_POINTS) {
         labels.shift();
