@@ -130,7 +130,7 @@ canvas {
                 <div class="card"><div class="label">Temperature</div><div class="value" id="temperature">--</div></div>
                 <div class="card"><div class="label">Altitude</div><div class="value" id="altitude">--</div></div>
                 <div class="card"><div class="label">Battery</div><div class="value" id="battery">--</div></div>
-                
+
             </div>
 
             <!-- Right: 2x2 charts -->
@@ -224,12 +224,12 @@ const el = document.getElementById(id);
     el.textContent = isOpen ? openText : closedText;
     el.classList.toggle("state-open", isOpen);
     el.classList.toggle("state-closed", !isOpen);
-    }
-    setState("n2o_valve", 14);
-    setState("n2_valve", 15);
-    setState("relief_valve", 16);
-    setState("quick_disconnect", 17, "Engaged", "Disengaged");
-    setState("clamshell", 18);
+}
+    setState("n2o_valve", 0, "Open", "Closed");
+    setState("n2_valve", 0, "Open", "Closed");
+    setState("relief_valve", 0, "Open", "Closed");
+    setState("quick_disconnect", 0, "Engaged", "Disengaged");
+    setState("clamshell", 0, "Open", "Closed");
 
     document.getElementById("temperature").innerText = data[19].toFixed(2) + " °C";
     document.getElementById("pressure").innerText = data[20].toFixed(2) + " bar";
