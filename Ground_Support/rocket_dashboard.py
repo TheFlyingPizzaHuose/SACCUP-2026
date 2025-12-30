@@ -108,24 +108,27 @@ def telemetry():
             "battery": round(random.uniform(10.5, 12.6), 2)
         })'''
         temp_data = [(time.time()-start_time), #0: Time
-                     math.sin(i/100),  #1: Pos X
-                     math.sin(i/100),  #2: Pos Y
-                     math.sin(i/100),  #3: Pos Z
-                     math.sin(i/100),  #4: Vel X
-                     math.sin(i/100),  #5: Vel Y
-                     math.sin(i/100),  #6: Vel Z
-                     math.sin(i/100),  #7: Theta
-                     math.sin(i/100),  #8: Phi
-                     math.sin(i/100),  #9: Supply Tank Temp
-                     math.sin(i/100),  #10: Rocket Tank Temp
-                     math.sin(i/100),  #11: N2O Pressure
-                     math.sin(i/100),  #12: N2 Pressure
-                     math.sin(i/100),  #13: Load Cell Reading
-                     math.sin(i/100),  #14: Ambient Temp
-                     math.sin(i/100),  #15: Ambient Pressure
-                     math.sin(i/100),  #16: AV1 Battery Voltage
-                     math.sin(i/100),  #17: AV2 Battery Voltage
-                     math.sin(i/100),  #18: GSE Battery Voltage
+                     data[0],  #1: Pos X
+                     data[1],  #2: Pos Y
+                     data[2],  #3: Pos Z
+                     data[3],  #4: Vel X
+                     data[4],  #5: Vel Y
+                     data[5],  #6: Vel Z
+                     data[6],  #7: Orientation Theta
+                     data[7],  #9: Supply Tank Temp
+                     data[8],  #10: Rocket Tank Temp
+                     data[9],  #11: N2O Pressure
+                     data[10],  #12: N2 Pressure
+                     data[11],  #13: Supply Tank Load Cell Reading
+                     data[12],  #14: Rocket Tank Load Cell Reading
+                     data[13],  #14: Ambient Temp
+                     data[14],  #15: Ambient Pressure
+                     data[15],  #16: AV1 Battery Voltage
+                     data[16],  #17: AV2 Battery Voltage
+                     data[17],  #18: N2O Valve State
+                     data[18],  #18: N2 Valve State
+                     data[19],  #18: Quick Disconnect State
+                     data[20],  #18: Clamshell State
                      ]
         binary_data = struct.pack(str(len(temp_data))+"f", *temp_data)
 

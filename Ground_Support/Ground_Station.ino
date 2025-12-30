@@ -48,9 +48,12 @@ uint8_t msg_class_01[13][10] = {{1,1,1}, //Ignition Abort
                               };
 
 //Telemetry Message Class
-uint8_t msg_class_02[3][10] = {{5,5,5,5,5,5,5,5,5,5}, //AV1 Telemetry
+uint8_t msg_class_02[6][10] = {{5,5,5,5,5,5,5,5,5,5}, //AV1 Telemetry
                               {5,5,5,5,5,5,5,5,5,5}, //AV2 Telemetry
-                              {5,5,5,5,5,2,2,2,2,2}, //GSE Temps, Presses, Rocket Mass and Status
+                              {5,5,5,5,5}, //GSE Temps, Presses, Supply and Rocket Mass
+                              {4}, //AV1 Detected Flight Events
+                              {4}, //AV2 Detected Flight Events
+                              {4} //GSE States
                               };
                               
 //Alert Message Class
@@ -60,7 +63,7 @@ uint8_t msg_class_03[7][10] = {{1,1,1}, //No Igniter Continuity
                               {1,1,1}, //GPS Lock Fail
                               {4}, //Rocket List of Failed Sensors
                               {4}, //GSE List of Failed Sensors
-                              {2}, //Rocket Computer Reset Register Value
+                              {2} //Rocket Computer Reset Register Value
                               };
 
 //Time between component usages in micros
@@ -114,6 +117,31 @@ std::map<std::string, bool> error_status = {
     {"MAG_CALLIB", false}
 };
 
+//Ground station to PC telemetry variables
+float pc_telem[21] = {
+  0, //0 Position X
+  0, //1 Position Y
+  0, //2 Position Z
+  0, //3 Velocity X
+  0, //4 Velocity Y
+  0, //5 Velocity Z
+  0, //6 Orientation Theta 
+  0, //7 Supply Tank Temp
+  0, //8 Rocket Tank Temp
+  0, //9 N2O Line Pressure
+  0, //10 N2 Line Pressure
+  0, //11 Supply Tank Load Cell Reading
+  0, //12 Rocket Tank Load Cell Reading
+  0, //13 Ambient Temperature
+  0, //14 Ambient pressure
+  0, //15 AV1 Battery Voltage
+  0, //16 AV2 Battery Voltage
+  0, //17 N2O Valve State
+  0, //18 N2 Valve State
+  0, //19 Quick Disconnect State
+  0  //20 Clamshell State
+};
+size_t pc_telem_length = sizeof(pc_telem)/sizeof(pc_telem[0]);
 //Message assembler input arrays
 uint8_t in_flag[10] ; 
 uint8_t in_int8s[10] ;
@@ -186,8 +214,45 @@ void loop() {
 //==========TELEMETRY CODE==========Alleon Oxales
 void read_telem(uint8_t msg_class, uint8_t msg_id){
   if(msg_class == 0x02){//Telemetry message class
-
+    if(msg_id == 0x01){//AV1 Telemetry
+      //Position & Velocity comes from AV1
+      pc_telem[0] = out_floats[0];//Position X
+      pc_telem[1] = out_floats[1];//Position Y
+      pc_telem[2] = out_floats[2];//Position Z
+      pc_telem[3] = out_floats[3];//Velocity X
+      pc_telem[4] = out_floats[4];//Velocity Y
+      pc_telem[5] = out_floats[5];//Velocity Z
+    }
+    if(msg_id == 0x02){//AV2 Telemetry
+      //Quaternion comes from AV2
+      pc_telem[6] = out_floats[6];//Quaternion X
+      pc_telem[7] = out_floats[7];//Quaternion Y
+      pc_telem[8] = out_floats[8];//Quaternion Z
+      pc_telem[9] = out_floats[9];//Quaternion W
+    }
+    if(msg_id == 0x03){//GSE telemetry
+      pc_telem[7] = out_floats[0];//Supply Temp
+      pc_telem[8] = out_floats[1];//Rocket Temp
+      pc_telem[9] = out_floats[2];//N2O Line Pres
+      pc_telem[10] = out_floats[3];//N2 Line Pres
+      pc_telem[11] = out_floats[4];//Supply Mass
+      pc_telem[12] = out_floats[5];//Rocket Mass
+    }
+    if(msg_id == 0x6){
+      pc_telem[17] = static_cast<float>((out_int32s[0] >> 0) & 1); //N2O Valve State
+      pc_telem[18] = static_cast<float>((out_int32s[0] >> 1) & 1); //N2 Valve State
+      pc_telem[19] = static_cast<float>((out_int32s[0] >> 2) & 1); //Quick Disconnect State
+      pc_telem[20] = static_cast<float>((out_int32s[0] >> 3) & 1); //Clamshell State
+    }
   }
+  for(size_t i = 0; i < pc_telem_length; i++){
+    Serial.print(pc_telem[i]);
+    if(i+1 < pc_telem_length){
+      Serial.print(',');
+    }
+  }
+  Serial.println();
+  Serial.flush();
 }
 
 //==========RADIO CODE==========Alleon Oxales

@@ -78,9 +78,9 @@ const uint Temp_rate = 50000;
 const uint HX711_rate = 100000;
 
 //HX711 pin assignments
-#define DOUT 3
-#define CLK 2
-const float load_cell_scale = 2280;
+#define DOUT 19
+#define CLK 18
+const float load_cell_scale = 1;
 HX711 scale; //HX711 library object
 
 ADC *adc = new ADC(); // adc object
@@ -208,7 +208,7 @@ char* check_file_on_SD(bool mode = 0) {  //Alleon Oxales
 
 void setup() {
   pinMode(N2O_pin, OUTPUT);
-  Serial.begin(38400);
+  Serial.begin(115200);
   Serial.print("Reset Register Value: ");
   Serial.println(SRC_SRSR);
   if(SRC_SRSR != 1){}// Read reset status register and PRGM_ERR if reset is not a power cycle
@@ -269,8 +269,8 @@ void setup() {
 void loop()
 {
   read_RFM();
-  read_load_cell();
-  read_pressure_1();
+ // read_load_cell();
+  read_pressure();
 }
 //==========COMMAND CODE==========Alleon Oxales
 void perform_command(uint8_t msg_class, uint8_t msg_id){
@@ -286,14 +286,14 @@ void perform_command(uint8_t msg_class, uint8_t msg_id){
 }
 //==========LOAD CELL CODE==========Alleon Oxales
 void read_load_cell(){
-  if(!error_status["HX711_FAIL"] && (micros()-HX711_last_time > HX711_rate)){
-    load_cell_output = scale.get_units(10); //Take 10 average samples and submit weight
+  if(scale.is_ready() && (micros()-HX711_last_time > HX711_rate)){
+    load_cell_output = scale.get_units(1); //Take 10 average samples and submit weight
     logfile.print(micros());
     logfile.print("|5|");
     logfile.println(load_cell_output);
-    //Serial.print("|5|");
-    //Serial.println(load_cell_output);
     HX711_last_time = micros();
+  }else{
+    Serial.println("Load Cell Fail");
   }
 }
 void tare_load_cell(){
@@ -317,26 +317,28 @@ float read_voltage(uint8_t pin) {//Kartik Function to read true voltage from a v
   // 3.3 is VREF for teensy
   return Vout;
 }
-void read_pressure_1(){//Alleon Oxales
+void read_pressure(){//Alleon Oxales
   if(micros()-Pressure_last_time > Pres_rate){
     float voltage = read_voltage(pressure_1_pin);
     pressure_1_output = 2500*(voltage-pressure_1_min_volt)/pressure_1_max_volt;
     logfile.print(micros());
     logfile.print("|1|");
     logfile.println(pressure_1_output);
-    Serial.print("|1|");
-    Serial.print(voltage);
-    Serial.print("||");
-    Serial.println(pressure_1_output);
+
+    voltage = read_voltage(pressure_2_pin);
+    pressure_2_output = voltage * 1000;
+    logfile.print(micros());
+    logfile.print("|2|");
+    logfile.println(pressure_2_output);
     Pressure_last_time = micros();
+
+    //Serial.print("|1|");
+    //Serial.print(pressure_1_output);
+    Serial.print("|2|");
+    Serial.println(pressure_2_output);
+   // Serial.print("|5|");
+    //Serial.println(load_cell_output);
   }
-}
-void read_pressure_2(){//Alleon Oxales
-  float voltage = read_voltage(pressure_2_pin);
-  pressure_1_output = 2500*(voltage-pressure_2_min_volt)/pressure_2_max_volt;
-  logfile.print(micros());
-  logfile.print("|2|");
-  logfile.println(pressure_2_output);
 }
 void read_temp_1(){//Alleon Oxales
   float voltage = read_voltage(temp_1_pin);
