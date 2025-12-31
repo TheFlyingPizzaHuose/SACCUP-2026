@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Rocket P&ID Control Panel</title>
+
+<style>
+body {
+  background: #06011f;
+  color: #9cff9c;
+  font-family: Consolas, monospace;
+}
+
+h3 {
+  margin-bottom: 10px;
+}
+
+/* Layout */
+#system {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+/* Tanks */
+.tank {
+  width: 80px;
+  height: 140px;
+  border: 2px solid #00ff66;
+  border-radius: 14px;
+  text-align: center;
+  padding-top: 10px;
+  font-size: 14px;
+}
+
+/* Pipes */
+.pipe {
+  width: 90px;
+  height: 3px;
+  background: #444; 
+}
+.pipe.on {
+  background: #00ff66;
+}
+
+/* Valve */
+.valve {
+  width: 70px;
+  text-align: center;
+}
+.valve-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  margin: auto;
+  background: #880000;
+  cursor: pointer;
+}
+
+.valve-icon.open {
+  background: #00aa44;
+}
+.status {
+  font-size: 12px;
+}
+
+/* Instruments */
+.pt {
+  width: 60px;
+  text-align: center;
+  border: 1px solid #00ff66;
+  padding: 4px;
+  font-size: 12px;
+}
+</style>
+</head>
+
+<body>
+
+<h2>Rocket Pressure Feed System</h2>
+<br> </br>
+
+<div id="system">
+
+  <!-- N2O Tank -->
+  <div class="tank">
+    N2O<br><span id="pN2O">569.5</span> psi
+  </div>
+
+  <div id="pipeN2O" class="pipe"></div>
+
+  <!-- PT2 -->
+  <div class="pt2">
+    PT2<br><span id="pLine">569.5</span> psi
+  </div>
+
+  <div class="pipeN2O"></div>
+
+   <!-- N2OV -->
+  <div class="valve">
+    <div id="vN2O" class="valve-icon"></div>
+    <div class="status" id="sN2O">CLOSED</div>
+    N2OV
+  </div>
+
+  <div class="pipeN2O"></div>
+
+   <!-- SOL1 -->
+  <div class="valve">
+    <div id="vSOL1" class="valve-icon"></div>
+    <div class="status" id="sSOL1">CLOSED</div>
+    SOL1
+  </div>
+
+  <div id="pipeN2O" class="pipe"></div>
+
+  
+   <!-- OX Tank -->
+  <div class="tank">
+    OX<br><span id="pOX">120</span> psi
+  </div>
+
+  <div id="pipeOX" class="pipe"></div>
+
+  <!-- SOL2 -->
+  <div class="valve">
+    <div id="vSOL2" class="valve-icon"></div>
+    <div class="status" id="sSOL2">CLOSED</div>
+    SOL2
+  </div>
+
+  <div id="pipeOX" class="pipe"></div>
+
+  <!-- PT3 -->
+  <div class="pt3">
+    PT3<br><span id="pLine">569.5</span> psi
+  </div>
+
+  <div class="pipeOX"></div>
+
+  <!-- N2 Tank -->
+  <div class="tank">N2<br><span id="pN2">2000</span> psi </div>
+  <div id="pipeN2" class="pipe"></div>
+
+  <!-- REG -->
+  <div class="valve">
+    <div id="vN2O" class="valve-icon"></div>
+    <div class="status" id="sN2O">CLOSED</div>
+    REG</div>
+
+  <!-- MLV2 -->
+  <div class="valve">
+    <div id="vN2" class="valve-icon"></div>
+    <div class="status" id="sN2">CLOSED</div>
+    MLV2
+  </div>
+
+  <div class="pipe"></div>
+
+  <!-- N2O Tank -->
+  <div class="tank">
+    N2O<br><span id="pN2O">569.5</span> psi
+  </div>
+
+  <div id="pipeN2O" class="pipe"></div>
+
+  <!-- MLV1 -->
+  <div class="valve">
+    <div id="vN2O" class="valve-icon"></div>
+    <div class="status" id="sN2O">CLOSED</div>
+    MLV1
+  </div>
+
+  <div class="pipe"></div>
+
+  <!-- MEV -->
+  <div class="valve">
+    <div id="vMEV" class="valve-icon"></div>
+    <div class="status" id="sMEV">CLOSED</div>
+    MEV
+  </div>
+
+  <div class="pipe"></div>
+
+  <!-- Combustion -->
+  <div class="tank">
+    COMB
+  </div>
+
+</div>
+
+<script>
+let valves = {
+  N2: false,
+  N2O: false,
+  SOL1: false,
+  MEV: false
+};
+
+function update() {
+  // Update valve visuals
+  Object.keys(valves).forEach(k => {
+    const v = document.getElementById("v" + k);
+    const s = document.getElementById("s" + k);
+    v.classList.toggle("open", valves[k]);
+    s.textContent = valves[k] ? "OPEN" : "CLOSED";
+  });
+
+  // Flow logic
+  const feedOpen = valves.N2 && valves.N2O && valves.SOL1;
+
+  document.getElementById("pipeN2").classList.toggle("on", valves.N2);
+  document.getElementById("pipeN2O").classList.toggle("on", valves.N2O);
+  document.getElementById("pipeMain").classList.toggle("on", feedOpen);
+  document.getElementById("pipeOX").classList.toggle("on", feedOpen && valves.MEV);
+
+  document.getElementById("pLine").textContent = feedOpen ? "400" : "0";
+}
+
+["N2","N2O","SOL1","MEV"].forEach(k => {
+  document.getElementById("v"+k).onclick = () => {
+    valves[k] = !valves[k];
+    update();
+  };
+});
+
+update();
+</script>
+
+</body>
+</html>
