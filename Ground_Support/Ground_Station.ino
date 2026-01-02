@@ -12,7 +12,7 @@ Avionics Datasheet
 https://docs.google.com/document/d/1AqIgfhQb1Wmkl7yFG0nSHRvpzL-viViXBCPfHbvtkt0/edit?usp=sharing
 */
 #include <SoftwareSerial.h>
-#include <RH_RF95.h> // Include RFM9X library
+#include "RadioHead/RH_RF95.h" // Include RFM9X library
 #include <SPI.h>              // SPI library
 #include <map>
 #include <string>
@@ -32,7 +32,7 @@ RH_RF95 rf95(RFM95_CS, RFM95_INT);
 const int RFM95_PWR = 23;
 
 //Command Message Class
-uint8_t msg_class_01[13][10] = {{1,1,1}, //Ignition Abort
+uint8_t msg_class_01[17][10] = {{1,1,1}, //Ignition Abort
                               {1,1,1}, //Avionics & Pad Arm
                               {1,1,1}, //Ignition Sequence Start
                               {1,1,1}, //N2O Fill Valve Open
@@ -45,6 +45,10 @@ uint8_t msg_class_01[13][10] = {{1,1,1}, //Ignition Abort
                               {1,1,1}, //Open Cooling Clamshell
                               {1,1,1}, //Enable TX
                               {1,1,1}, //Disable TX
+                              {1,1,1}, //Tare Scale 1
+                              {1,1,1}, //Tare Scale 2
+                              {1,1,1}, //AV1 Inertial Align
+                              {1,1,1}, //AV2 Inertial Align
                               };
 
 //Telemetry Message Class
@@ -69,8 +73,18 @@ uint8_t msg_class_03[7][10] = {{1,1,1}, //No Igniter Continuity
 //Time between component usages in micros
 const uint RFM9x_rate = 50000;
 const uint SD_rate = 50000;
+//const uint PC_rate = 40000; <Not needed cuz PC telem gets sent everytime telem is recieved.
 
 //===============Dynamic Variables===============
+
+//3 arrays w/ 100 bools store if previous RSSI greater than -50
+//Indecies also present, used when writing and index get's reset at i=99
+bool GSE_RSSI[100];
+uint8_t GSE_RSSI_index = 0;
+bool AV1_RSSI[100];
+uint8_t AV1_RSSI_index = 0;
+bool AV2_RSSI[100];
+uint8_t AV2_RSSI_index = 0;
 
 //Message parser output arrays
 u_int8_t out_flag[10]; 
@@ -82,6 +96,11 @@ float out_floats[10];
 //Times of last component usages
 const uint RFM9x_last_time = 0;
 const uint SD_last_time = 0;
+
+//Frequency selection index 0:GSE, 1:AV1, 2:AV2 & time since last ACK
+uint GSE_ACK_last_time = 0;
+uint AV1_ACK_last_time = 0;
+uint AV2_ACK_last_time = 0;
 
 std::map<std::string, bool> error_status = {
     {"PRGM_ERROR", false},
@@ -155,9 +174,14 @@ uint8_t message_send_len = 0;
 
 void setup() {   
   Serial.begin(38400);
-  Serial.print("Reset Register Value: ");
-  Serial.println(SRC_SRSR);
-  if(SRC_SRSR != 1){}// Read reset status register and PRGM_ERR if reset is not a power cycle
+
+  // Save copy of Reset Status Register
+  uint32_t lastResetCause = SRC_SRSR;
+  // Clear all Reset Status Register bits
+  SRC_SRSR = (uint32_t)0x1FF;
+
+  // ... more setup steps, get USB ready ...
+  resetCause(lastResetCause);
 
   pinMode(RFM95_RST, OUTPUT);
   Serial.println("Reset RFM9x");
@@ -167,11 +191,10 @@ void setup() {
   delay(10);
   digitalWrite(RFM95_RST, LOW);
   delay(10);
-  
   if (!rf95.init()){
     Serial.println("RFM9x init failed");  
   }else{
-    Serial.println("RFM0x init sucess");
+    Serial.println("RFM9x init sucess");
     rf95.setFrequency(GSE_FREQ);
     rf95.setTxPower(RFM95_PWR, false);
   }
@@ -189,7 +212,7 @@ void loop() {
     uint8_t buf[RH_RF95_MAX_MESSAGE_LEN];
     uint8_t len = sizeof(buf);
 
-    if (rf95.waitAvailableTimeout(150))
+    if (rf95.waitAvailableTimeout(50))
     { 
       // Should be a reply message for us now   
       if (rf95.recv(buf, &len))
@@ -199,15 +222,9 @@ void loop() {
         Serial.print("RSSI: ");
         Serial.println(rf95.lastRssi(), DEC);    
       }
-      else
-      {
-        Serial.println("No ACK");
-      }
+      else{Serial.println("No ACK");}
     }
-    else
-    {
-      Serial.println("No ACK");
-    }
+    else{Serial.println("No ACK");}
   }
   read_RFM();
 }
@@ -265,6 +282,11 @@ void read_RFM() {
     if (rf95.recv(buf, &len)) {
       Serial.print("RSSI: ");
       Serial.println(rf95.lastRssi(), DEC);
+      if(buf[0] == 'A' && buf[1] == 'C' && buf[2] == 'K'){
+        if(buf[4] == '0'){GSE_ACK_last_time = micros();}//Show GSE has responded at this time
+        if(buf[4] == '1'){AV1_ACK_last_time = micros();}//Show AV1 has responded at this time
+        if(buf[4] == '2'){AV2_ACK_last_time = micros();}//Show AV2 has responded at this time
+      }
       message_parser(buf);//Parse the message
       read_telem(buf[0], buf[1]);
       //No need for ACK code here :)
@@ -439,4 +461,56 @@ uint32_t bytes_to_int_32(uint8_t* data) { //Alleon Oxales, Converts bytes to int
   uint32_t num;
   memcpy(&num, data, sizeof(num));
   return num;
+}
+
+// i.MX RT1060 Processor Reference Manual, 21.8.3 SRC Reset Status Register
+// Credit to jrw member of pjrc forum for code:
+// https://forum.pjrc.com/index.php?threads/how-to-read-last-reset-reason-for-teensy-4-1.66654/#:~:text=/*%20======,R
+void resetCause(uint32_t resetStatusReg) {
+    bool info = false;
+
+    if (resetStatusReg & SRC_SRSR_TEMPSENSE_RST_B) {
+        Serial.println("Temperature Sensor Software Reset");
+        info = true;
+    }
+    if (resetStatusReg & SRC_SRSR_WDOG3_RST_B) {
+        Serial.println("IC Watchdog3 Timeout Reset");
+        info = true;
+    }
+    if (resetStatusReg & SRC_SRSR_JTAG_SW_RST) {
+        Serial.println("JTAG Software Reset");
+        info = true;
+    }
+    if (resetStatusReg & SRC_SRSR_JTAG_RST_B) {
+        Serial.println("High-Z JTAG Reset");
+        info = true;
+    }
+    if (resetStatusReg & SRC_SRSR_WDOG_RST_B) {
+        Serial.println("IC Watchdog Timeout Reset");
+        info = true;
+    }
+    if (resetStatusReg & SRC_SRSR_IPP_USER_RESET_B) {
+        Serial.println("Power-up Sequence (Cold Reset Event)");
+        info = true;
+    }
+    if (resetStatusReg & SRC_SRSR_CSU_RESET_B) {
+        Serial.println("Central Security Unit Reset");
+        info = true;
+    }
+    if (resetStatusReg & SRC_SRSR_LOCKUP_SYSRESETREQ) {
+        Serial.println("CPU Lockup or Software Reset");
+        info = true;
+        /* Per datasheet: "SW needs to write a value to SRC_GPR5
+         * before writing the SYSRESETREQ bit and use the SRC_GPR5
+         * value to distinguish if the reset is caused by SYSRESETREQ
+         * or CPU lockup."
+         */
+    }
+    if (resetStatusReg & SRC_SRSR_IPP_RESET_B) {
+        Serial.println("Power-up Sequence");
+        info = true;
+    }
+    if (!info) {
+        Serial.println("No status bits set in SRC Reset Status Register");
+    }
 }

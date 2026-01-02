@@ -39,26 +39,32 @@ const int RFM95_PWR = 23;
 #define N2O_pin 7
 
 //Command Message Class
-u_int8_t msg_class_01[13][10] = {{1,1,1}, //Ignition Abort
-                                        {1,1,1}, //Avionics & Pad Arm
-                                        {1,1,1}, //Ignition Sequence Start
-                                        {1,1,1}, //N2O Fill Valve Open
-                                        {1,1,1}, //N2O Fill Valve Closed
-                                        {1,1,1}, //N2 Fill Valve Open
-                                        {1,1,1}, //N2 Fill Valve Close
-                                        {1,1,1}, //Relief Valve Open
-                                        {1,1,1}, //Relief Valve Closed
-                                        {1,1,1}, //Disconnect Rocket Fill Line
-                                        {1,1,1}, //Open Cooling Clamshell
-                                        {1,1,1}, //Enable TX
-                                        {1,1,1}, //Disable TX
-                                        };
+uint8_t msg_class_01[17][10] = {{1,1,1}, //Ignition Abort
+                              {1,1,1}, //Avionics & Pad Arm
+                              {1,1,1}, //Ignition Sequence Start
+                              {1,1,1}, //N2O Fill Valve Open
+                              {1,1,1}, //N2O Fill Valve Closed
+                              {1,1,1}, //N2 Fill Valve Open
+                              {1,1,1}, //N2 Fill Valve Close
+                              {1,1,1}, //Relief Valve Open
+                              {1,1,1}, //Relief Valve Closed
+                              {1,1,1}, //Disconnect Rocket Fill Line
+                              {1,1,1}, //Open Cooling Clamshell
+                              {1,1,1}, //Enable TX
+                              {1,1,1}, //Disable TX
+                              {1,1,1}, //Tare Scale 1
+                              {1,1,1}, //Tare Scale 2
+                              {1,1,1}, //AV1 Inertial Align
+                              {1,1,1}, //AV2 Inertial Align
+                              };
 
-//Telemetry Message Class
-u_int8_t msg_class_02[3][10] = {{5,5,5,5,5,5,5,5,5,5}, //AV1 Telemetry
-                                      {5,5,5,5,5,5,5,5,5,5}, //AV2 Telemetry
-                                      {5,5,5,5,5,2,2,2,2,2}, //GSE Temps, Presses, Rocket Mass and Status
-                                      };
+uint8_t msg_class_02[6][10] = {{5,5,5,5,5,5,5,5,5,5}, //AV1 Telemetry
+                              {5,5,5,5,5,5,5,5,5,5}, //AV2 Telemetry
+                              {5,5,5,5,5}, //GSE Temps, Presses, Supply and Rocket Mass
+                              {4}, //AV1 Detected Flight Events
+                              {4}, //AV2 Detected Flight Events
+                              {4} //GSE States
+                              };
                               
 //Alert Message Class
 u_int8_t msg_class_03[7][10] = {{1,1,1}, //No Igniter Continuity
@@ -365,15 +371,14 @@ void read_RFM() {
     uint8_t len = sizeof(buf);
 
     if (rf95.recv(buf, &len)) {
-      Serial.print("RSSI: ");
-      Serial.println(rf95.lastRssi(), DEC);
+      // Send a reply
+      uint8_t data[] = "ACK0"; //ACK0: GSE, ACK1: AV1, ACK2: AV2
+
+      rf95.send(data, sizeof(data));
+      //Serial.print("RSSI: ");
+      //Serial.println(rf95.lastRssi(), DEC);
       message_parser(buf);//Parse the message
       perform_command(buf[0], buf[1]);
-
-      // Send a reply
-      uint8_t data[] = "ACK";
-      rf95.send(data, sizeof(data));
-      rf95.waitPacketSent();
     }
     else
     {
