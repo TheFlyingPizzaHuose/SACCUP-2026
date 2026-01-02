@@ -1,4 +1,5 @@
 clc
+clear
 jsonStr = fileread('Engine_Config.json');  % Read entire JSON file as text
 config = jsondecode(jsonStr);              % Parse JSON
 
@@ -120,7 +121,7 @@ function [T, R, gamma, rho, c_star] = combustion_props(pres_Pa, o_f_ratio, input
     c_star = eff*sqrt(term1*(term2^term3));
 end
 
-%{
+
 test = 0.1;
 temps600 = [];
 temps500 = [];
@@ -129,7 +130,7 @@ temps300 = [];
 temps200 = [];
 temps100 = [];
 ratios = [];
-while test < 30
+while test < 50
     ratios = [ratios, test];
     [~,~,~,~, cat] = combustion_props(101325*600/14.7, test, combustion_props_input);
     temps600 = [temps600, cat];
@@ -351,7 +352,7 @@ function [d_temp, new_vaporized] = vaporize(old_gas_mass, new_gas_mass, liquid_m
     %Cp = 1720; %J/kg*K https://rocketprops.readthedocs.io/en/latest/n2o_prop.html?
     A = (new_gas_mass-old_gas_mass);
     delay_vaporized = delay_vaporized + time_constant*(A-delay_vaporized);
-    if vap_flag
+    if ~vap_flag
         new_vaporized = 0.01*delay_vaporized;
     else
         new_vaporized = delay_vaporized;
@@ -467,7 +468,7 @@ Z2 = 0;
 steps = 0;
 %while "has liq N2O and tank pressure higher than chamber pressure
 %and has fuel grain left"
-while vapor_mass >= 0 && port_diam < chamber_OD && tank_pres > chamber_pres
+while vapor_mass >= 0 && port_diam < chamber_OD && tank_pres > chamber_pres;% && steps < 4200
     steps = steps+1;
     [rho_liquid, ~, vap_pres] = N2O_properties(tank_temp);
     k = config.k_discharge_factor;
@@ -570,7 +571,15 @@ while vapor_mass >= 0 && port_diam < chamber_OD && tank_pres > chamber_pres
     mass_flow = (fuel_input+d_mass)/dt;
     oxidizer_fuel_ratio = d_mass/fuel_input;
     [chamber_temp, burn_R, burn_gamma, burn_rho, c_Star] = combustion_props(chamber_pres, oxidizer_fuel_ratio, combustion_props_input);
+    %chamber_temp = 273-40;
+
     
+    %N2O Dump:
+    %term1 = 188*chamber_temp/1.3;
+    %term2 = (1.3+1)/2;
+    %term3 = (1.3+1)/(1.3-1);
+    %c_Star = config.combustion_efficiency*sqrt(term1*(term2^term3));
+
     %calculate mass flow out and new chamber pressure
     flow_out = config.discharge_coeff*chamber_pres * throat_area / c_Star; %0.9 is the discharge coefficient for conical nozzle
     chamber_pres = chamber_pres + dt*chamber_pres*((mass_flow-flow_out)/chamber_mass - (d_volume/chamber_volume));
@@ -582,12 +591,14 @@ while vapor_mass >= 0 && port_diam < chamber_OD && tank_pres > chamber_pres
 
     %calculate thrust
     [thrust, Pe] = calc_thrust(chamber_pres, outside_pres, chamber_temp, burn_gamma, burn_R, throat_area, exit_area, flow_out, c_Star);
+    %N2O Dump: [thrust, Pe] = calc_thrust(chamber_pres, outside_pres, chamber_temp, 1.3, 188, throat_area, exit_area, flow_out, c_Star);
     thrust = config.nozzle_efficiency*thrust; %divergence losses
     
     time = time+dt;
 
     if(time - last > 0.1)
-        disp([time, d_mass/dt, 14.7*chamber_pres/101325, G_ox, chamber_mass])
+        %disp([time, d_mass/dt, 14.7*chamber_pres/101325, G_ox, chamber_mass])
+        disp(d_mass/dt)
         last = time;
     end
 
@@ -630,12 +641,12 @@ fprintf(fid, [config.eng_name, ' ', ...
               config.eng_diam, ' ', ...
               config.eng_length, ' ', ...
               config.eject_delay, ' ', ...
-              sprintf('%.0f',(start_mass-prop_used)), ' ', ...
-              sprintf('%.0f',(start_mass)), ' AT\n']); %write header of engine file
+              sprintf('%.3f',(prop_used)), ' ', ...
+              sprintf('%.3f',(start_mass)), ' AT\n']); %write header of engine file
 i = 1;
 while i < length(times)
     fprintf(fid, ['   ', sprintf('%.3f', times(i)), ' ', sprintf('%.0f', thrusts(i)), '\n']);
-    i=i+1;
+    i=i+10;
 end
 fclose(fid);
 
