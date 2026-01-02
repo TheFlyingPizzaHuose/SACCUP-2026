@@ -94,8 +94,8 @@ u_int32_t out_int32s[10];
 float out_floats[10];
 
 //Times of last component usages
-const uint RFM9x_last_time = 0;
-const uint SD_last_time = 0;
+uint RFM9x_last_time = 0;
+uint SD_last_time = 0;
 
 //Frequency selection index 0:GSE, 1:AV1, 2:AV2 & time since last ACK
 uint GSE_ACK_last_time = 0;
@@ -168,9 +168,10 @@ uint16_t in_int16s[10] ;
 uint32_t in_int32s[10] ;
 float in_floats[10] ;
 
-//Message assembler buffer and message length
+//Message assembler buffer, message length, and message ready boolean
 uint8_t message_send_buf[43];
 uint8_t message_send_len = 0;
+bool msg_ready = 0;
 
 void setup() {   
   Serial.begin(38400);
@@ -201,32 +202,43 @@ void setup() {
 }
 
 void loop() {
-  if(Serial.available()){
-    uint8_t data[] = {'0'};
-    Serial.println("Sending  command");
-    // Send a message to rf95_server
-    rf95.send(data, sizeof(data));
-    
-    rf95.waitPacketSent();
-    // Now wait for a reply
-    uint8_t buf[RH_RF95_MAX_MESSAGE_LEN];
-    uint8_t len = sizeof(buf);
-
-    if (rf95.waitAvailableTimeout(50))
-    { 
-      // Should be a reply message for us now   
-      if (rf95.recv(buf, &len))
-    {
-        Serial.print("got reply: ");
-        Serial.println((char*)buf);
-        Serial.print("RSSI: ");
-        Serial.println(rf95.lastRssi(), DEC);    
-      }
-      else{Serial.println("No ACK");}
-    }
-    else{Serial.println("No ACK");}
-  }
+  send_command();
   read_RFM();
+  send_RFM();
+}
+//==========COMMAND CODE==========Alleon Oxales
+void send_command(){
+  if(Serial.available()){
+    char command = Serial.read();
+    uint8_t command_id = 0;
+    switch(command){//Switch case is best so it doesn't send a command if input is incorrect
+      case '1': command_id = 0x01; break;
+      case '2': command_id = 0x02; break;
+      case '3': command_id = 0x03; break;
+      case '4': command_id = 0x04; break;
+      case '5': command_id = 0x05; break;
+      case '6': command_id = 0x06; break;
+      case '7': command_id = 0x07; break;
+      case '8': command_id = 0x08; break;
+      case '9': command_id = 0x09; break;
+      case 'A': command_id = 0x0A; break;
+      case 'B': command_id = 0x0B; break;
+      case 'C': command_id = 0x0C; break;
+      case 'D': command_id = 0x0D; break;
+      case 'E': command_id = 0x0E; break;
+      case 'F': command_id = 0x0F; break;
+      case 'G': command_id = 0x10; break;
+      case 'H': command_id = 0x11; break;
+    }
+    set_command_msg(command_id);
+  }
+}
+void set_command_msg(uint8_t command_id){
+  in_flag[0] = 0xFF;
+  in_flag[1] = 0xFF;
+  in_flag[2] = 0xFF;
+  message_assembler(0x01, command_id);
+  msg_ready = 1;
 }
 //==========TELEMETRY CODE==========Alleon Oxales
 void read_telem(uint8_t msg_class, uint8_t msg_id){
@@ -262,7 +274,7 @@ void read_telem(uint8_t msg_class, uint8_t msg_id){
       pc_telem[20] = static_cast<float>((out_int32s[0] >> 3) & 1); //Clamshell State
     }
   }
-  for(size_t i = 0; i < pc_telem_length; i++){
+  for(size_t i = 0; i < pc_telem_length; i++){//Sends telem to PC Serial
     Serial.print(pc_telem[i]);
     if(i+1 < pc_telem_length){
       Serial.print(',');
@@ -298,21 +310,11 @@ void read_RFM() {
   }
 }
 void send_RFM() {
-  /*if ((micros() - RFM_LAST > RFM_RATE) && !errorCodes[RFM9X_FAIL]) {
-    char* message = readyPacket();
-    //itoa(packetnum++, radiopacket+13, 10);
-    //Serial.print("Sending "); Serial.println(radiopacket);
-    //radiopacket[19] = 0;
-
-    //Serial.println("Sending...");
-    //delay(10);
-    rf95.send(message, charArrayLegnth);
-
-    //Serial.println("Waiting for packet to complete...");
-    //delay(10);
-    //rf95.waitPacketSent();
-    RFM_LAST = micros();
-  }*/
+  if (!error_status["RFM9X_FAIL"] && micros()-RFM9x_last_time>RFM9x_rate && msg_ready){
+    rf95.send(message_send_buf, message_send_len);
+    RFM9x_last_time = micros();
+    msg_ready = 0;
+  }
 }
 uint8_t radio_checksum(uint8_t* radioMSG, uint8_t msgLength) {//fletcher 8 checksum algorithm
   uint8_t sum1 = 0;
@@ -431,6 +433,7 @@ void message_assembler(uint8_t msg_class, uint8_t msg_id){
   message_send_buf[buffer_index] = radio_checksum(message_send_buf, buffer_index);
   buffer_index++;
   message_send_len = buffer_index;
+  msg_ready = 1;
 }
 //==========Data Type Conversion==========Alleon Oxales
 //Passes pointers to character array and converts those bytes to another type

@@ -182,9 +182,10 @@ uint16_t in_int16s[10] ;
 uint32_t in_int32s[10] ;
 float in_floats[10] ;
 
-//Message assembler buffer and message length
+//Message assembler buffer, message length, and message ready boolean
 uint8_t message_send_buf[43];
 uint8_t message_send_len = 0;
+bool msg_ready = 0;
 
 char* check_file_on_SD(bool mode = 0) {  //Alleon Oxales
   int fileExists = 1;
@@ -275,7 +276,7 @@ void setup() {
 void loop()
 {
   read_RFM();
- // read_load_cell();
+  read_load_cell();
   read_pressure();
 }
 //==========COMMAND CODE==========Alleon Oxales
@@ -298,8 +299,6 @@ void read_load_cell(){
     logfile.print("|5|");
     logfile.println(load_cell_output);
     HX711_last_time = micros();
-  }else{
-    Serial.println("Load Cell Fail");
   }
 }
 void tare_load_cell(){
@@ -387,7 +386,11 @@ void read_RFM() {
   }
 }
 void send_RFM() {
-  rf95.send(message_send_buf, message_send_len);
+  if (!error_status["RFM9X_FAIL"] && micros()-RFM9x_last_time>RFM9x_rate && msg_ready){
+    rf95.send(message_send_buf, message_send_len);
+    RFM9x_last_time = micros();
+    msg_ready = 0;
+  }
 }
 uint8_t radio_checksum(uint8_t* radioMSG, uint8_t msgLength) {//fletcher 8 checksum algorithm
   uint8_t sum1 = 0;
@@ -506,6 +509,7 @@ void message_assembler(uint8_t msg_class, uint8_t msg_id){
   message_send_buf[buffer_index] = radio_checksum(message_send_buf, buffer_index);
   buffer_index++;
   message_send_len = buffer_index;
+  msg_ready = 1;
 }
 //==========Data Type Conversion==========Alleon Oxales
 //Passes pointers to character array and converts those bytes to another type
