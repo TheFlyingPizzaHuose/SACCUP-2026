@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html>
 <head>
@@ -6,151 +7,169 @@
 
     <style>
     html, body {
-    height: 100%;
-    margin: 0;
-    overflow: hidden;
-    background: #0b0e14;
-    color: #e6e6e6;
-    font-family: Arial, sans-serif;
-}
-.page {
-    height: 100vh;
-    display: grid;
-    grid-template-rows: 72fr 28fr; /* top vs bottom ratio */
-    gap: 1vh;
-    padding: 1vh;
-    box-sizing: border-box;
-}
-.top {
-    display: grid;
-    grid-template-columns: 15fr 70fr; /* readouts vs charts */
-    gap: 1vh;
-    min-height: 0;
-}
-.readouts {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 0.1vh;
-    padding: 1vh;
-    border-radius: 1vh;
-    background: #0f1724;
-
-    min-height: 0;
-    overflow-y: auto; /* scroll ONLY if absolutely required */
-}
-.card {
-    background: #111827;
-    border-radius: 0.5vh;
-    /*padding: 0.8vh;*/
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    min-height: 4.5vh;
-}
-.card .label {
-    font-size: clamp(1px, 0.9vw, 12px);
-    color: #9ca3af;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-}
-.value {
-    font-size: clamp(1px, 1.4vw, 20px);
-    font-weight: 700;
-    line-height: 1.1;
-}
-.charts {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    grid-template-rows: repeat(2, 1fr);
-    gap: 1vh;
-    min-height: 0;
-}
-.chart-container {
-    background: #020617;
-    border-radius: 0.6vh;
-    padding: 0.8vh;
-    min-height: 0;
-}
-canvas {
-    width: 100% !important;
-    height: 100% !important;
-}
-.log {
-    background: #020617;
-    border-radius: 0.6vh;
-    padding: 1vh;
-    font-family: monospace;
-    font-size: clamp(11px, 1vw, 14px);
-    overflow: auto;
-    min-height: 0;
-}
-.value.state-open {
-    color: #22c55e;            /* green */
-    text-shadow: 0 0 6px rgba(34,197,94,0.4);
-}
-.value.state-closed {
-    color: #ef4444;            /* red */
-    text-shadow: 0 0 6px rgba(239,68,68,0.35);
-}
-
+        height: 100%;
+        margin: 0;
+        overflow: hidden;
+        background: #0b0e14;
+        color: #e6e6e6;
+        font-family: Arial, sans-serif;
+    }
+    .page {
+        height: 100vh;
+        display: grid;
+        grid-template-rows: 72fr 28fr;
+        gap: 1vh;
+        padding: 1vh;
+        box-sizing: border-box;
+    }
+    .top {
+        display: grid;
+        grid-template-columns: 15fr 70fr;
+        gap: 1vh;
+        min-height: 0;
+    }
+    .readouts {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.1vh;
+        padding: 1vh;
+        border-radius: 1vh;
+        background: #0f1724;
+        min-height: 0;
+        overflow-y: auto;
+    }
+    .card {
+        background: #111827;
+        border-radius: 0.5vh;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        min-height: 4.5vh;
+        padding: 0.6vh;
+    }
+    .card .label {
+        font-size: clamp(1px, 0.9vw, 12px);
+        color: #9ca3af;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+    }
+    .value {
+        font-size: clamp(1px, 1.4vw, 20px);
+        font-weight: 700;
+        line-height: 1.1;
+    }
+    .charts {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        grid-template-rows: repeat(2, 1fr);
+        gap: 1vh;
+        min-height: 0;
+    }
+    .chart-container {
+        background: #020617;
+        border-radius: 0.6vh;
+        padding: 0.8vh;
+        min-height: 0;
+    }
+    canvas {
+        width: 100% !important;
+        height: 100% !important;
+    }
+    .log {
+        background: #020617;
+        border-radius: 0.6vh;
+        padding: 1vh;
+        font-family: monospace;
+        font-size: clamp(11px, 1vw, 14px);
+        overflow: auto;
+        min-height: 0;
+    }
+    .value.state-open {
+        color: #22c55e;
+        text-shadow: 0 0 6px rgba(34,197,94,0.4);
+    }
+    .value.state-closed {
+        color: #ef4444;
+        text-shadow: 0 0 6px rgba(239,68,68,0.35);
+    }
+    .mini-btn {
+        margin-top: 0.4vh;
+        width: fit-content;
+        padding: 0.2vh 0.8vh;
+        border-radius: 0.5vh;
+        border: 1px solid rgba(255,255,255,0.15);
+        background: #0b1220;
+        color: #e6e6e6;
+        font-size: clamp(10px, 0.8vw, 12px);
+        cursor: pointer;
+    }
+    .mini-btn:hover {
+        background: #111b30;
+    }
     </style>
 </head>
 
 <body>
 
-<!-- Single Readouts -->
 <div class="page">
-        <div class="top">
-            <!-- Left: compact readouts -->
-            <div class="readouts" id="readoutsGrid">
+    <div class="top">
+        <div class="readouts" id="readoutsGrid">
 
-                <div class="card"><div class="label">Pos X</div><div class="value" id="pos_x">--</div></div>
-                <div class="card"><div class="label">Pos Y</div><div class="value" id="pos_y">--</div></div>
-                <div class="card"><div class="label">Pos Z</div><div class="value" id="pos_z">--</div></div>
-                <div class="card"><div class="label">Vel X</div><div class="value" id="vel_x">--</div></div>
+            <div class="card"><div class="label">Pos X</div><div class="value" id="pos_x">--</div></div>
+            <div class="card"><div class="label">Pos Y</div><div class="value" id="pos_y">--</div></div>
+            <div class="card"><div class="label">Pos Z</div><div class="value" id="pos_z">--</div></div>
+            <div class="card"><div class="label">Vel X</div><div class="value" id="vel_x">--</div></div>
 
-                <div class="card"><div class="label">Vel Y</div><div class="value" id="vel_y">--</div></div>
-                <div class="card"><div class="label">Vel Z</div><div class="value" id="vel_z">--</div></div>
-                <div class="card"><div class="label">Theta</div><div class="value" id="theta">--</div></div>
-                <div class="card"><div class="label">Phi</div><div class="value" id="phi">--</div></div>
+            <div class="card"><div class="label">Vel Y</div><div class="value" id="vel_y">--</div></div>
+            <div class="card"><div class="label">Vel Z</div><div class="value" id="vel_z">--</div></div>
+            <div class="card"><div class="label">Theta</div><div class="value" id="theta">--</div></div>
+            <div class="card"><div class="label">Phi</div><div class="value" id="phi">--</div></div>
 
-                <div class="card"><div class="label">Supply Tank Temp</div><div class="value" id="supply_tank_temp">--</div></div>
-                <div class="card"><div class="label">Rocket Tank Temp</div><div class="value" id="rocket_tank_temp">--</div></div>
-                <div class="card"><div class="label">N20 Line Pressure</div><div class="value" id="n20_line_pressure">--</div></div>
-                <div class="card"><div class="label">N2 Line Pressure</div><div class="value" id="n2_line_pressure">--</div></div>
-                <div class="card"><div class="label">Load Cell Reading</div><div class="value" id="load_cell_reading">--</div></div>
+            <div class="card"><div class="label">Supply Tank Temp</div><div class="value" id="supply_tank_temp">--</div></div>
+            <div class="card"><div class="label">Rocket Tank Temp</div><div class="value" id="rocket_tank_temp">--</div></div>
+            <div class="card"><div class="label">N20 Line Pressure</div><div class="value" id="n20_line_pressure">--</div></div>
+            <div class="card"><div class="label">N2 Line Pressure</div><div class="value" id="n2_line_pressure">--</div></div>
+            <div class="card"><div class="label">Load Cell Reading</div><div class="value" id="load_cell_reading">--</div></div>
 
-                <div class="card"><div class="label">N₂O Valve</div><div class="value" id="n2o_valve">--</div></div>
-                <div class="card"><div class="label">N₂ Valve</div><div class="value" id="n2_valve">--</div></div>
-                <div class="card"><div class="label">Relief</div><div class="value" id="relief_valve">--</div></div>
-                <div class="card"><div class="label">QD</div><div class="value" id="quick_disconnect">--</div></div>
-                <div class="card"><div class="label">Clamshell</div><div class="value" id="clamshell">--</div></div>
+            <div class="card"><div class="label">N₂O Valve</div><div class="value" id="n2o_valve">--</div></div>
+            <div class="card"><div class="label">N₂ Valve</div><div class="value" id="n2_valve">--</div></div>
+            <div class="card"><div class="label">Relief</div><div class="value" id="relief_valve">--</div></div>
+            <div class="card"><div class="label">QD</div><div class="value" id="quick_disconnect">--</div></div>
+            <div class="card"><div class="label">Clamshell</div><div class="value" id="clamshell">--</div></div>
 
-                <div class="card"><div class="label">Pressure</div><div class="value" id="pressure">--</div></div>
-                <div class="card"><div class="label">Temperature</div><div class="value" id="temperature">--</div></div>
-                <div class="card"><div class="label">AV1 Battery</div><div class="value" id="av1_battery">--</div></div>
-                <div class="card"><div class="label">AV2 Battery</div><div class="value" id="av2_battery">--</div></div>
-                <div class="card"><div class="label">GSE Battery</div><div class="value" id="gse_battery">--</div></div>
-
-                <div class="card"><div class="label">GSE RSSI</div><div class="value" id="gse_rssi">--</div></div>
-                <div class="card"><div class="label">AV1 RSSI</div><div class="value" id="av1_rssi">--</div></div>
-                <div class="card"><div class="label">AV2 RSSI</div><div class="value" id="av2_rssi">--</div></div>
-
+            <div class="card">
+                <div class="label">Flight State</div>
+                <div class="value" id="flight_state">liftoff</div>
+                <button class="mini-btn" onclick="nextFlightState()">Next</button>
             </div>
 
-            <!-- Right: 2x2 charts -->
-            <div class="charts">
-                <div class="chart-container"><canvas id="altitudeChart"></canvas></div>
-                <div class="chart-container"><canvas id="pressureChart"></canvas></div>
-                <div class="chart-container"><canvas id="temperatureChart"></canvas></div>
-                <div class="chart-container"><canvas id="batteryChart"></canvas></div>
-            </div>
+            <div class="card"><div class="label">Pressure</div><div class="value" id="pressure">--</div></div>
+            <div class="card"><div class="label">Temperature</div><div class="value" id="temperature">--</div></div>
+            <div class="card"><div class="label">AV1 Battery</div><div class="value" id="av1_battery">--</div></div>
+            <div class="card"><div class="label">AV2 Battery</div><div class="value" id="av2_battery">--</div></div>
+            <div class="card"><div class="label">GSE Battery</div><div class="value" id="gse_battery">--</div></div>
+
+            <div class="card"><div class="label">GSE RSSI</div><div class="value" id="gse_rssi">--</div></div>
+            <div class="card"><div class="label">AV1 RSSI</div><div class="value" id="av1_rssi">--</div></div>
+            <div class="card"><div class="label">AV2 RSSI</div><div class="value" id="av2_rssi">--</div></div>
+
         </div>
-    
-        <!-- Bottom: telemetry log -->
-        <div class="log" id="telemetryLog"></div>
+
+        <div class="charts">
+            <div class="chart-container"><canvas id="altitudeChart"></canvas></div>
+            <div class="chart-container"><canvas id="pressureChart"></canvas></div>
+            <div class="chart-container"><canvas id="temperatureChart"></canvas></div>
+            <div class="chart-container"><canvas id="batteryChart"></canvas></div>
+        </div>
     </div>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js" integrity="sha512-q/dWJ3kcmjBLU4Qc47E4A9kTB4m3wuTY7vkFJDTZKjTs8jhyGQnaUrxa0Ytd0ssMZhbNua9hE+E7Qv1j+DyZwA==" crossorigin="anonymous"></script>
+
+    <div class="log" id="telemetryLog"></div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"
+        integrity="sha512-q/dWJ3kcmjBLU4Qc47E4A9kTB4m3wuTY7vkFJDTZKjTs8jhyGQnaUrxa0Ytd0ssMZhbNua9hE+E7Qv1j+DyZwA=="
+        crossorigin="anonymous"></script>
+
 <script>
 const socket = io({
     transports: ["websocket"],
@@ -164,6 +183,14 @@ let altitudeData = [];
 let pressureData = [];
 let temperatureData = [];
 let batteryData = [];
+
+const flightStates = ["liftoff", "burnout", "apogee", "drogue", "main", "landed"];
+let flightIndex = 0;
+
+function nextFlightState() {
+    flightIndex = (flightIndex + 1) % flightStates.length;
+    document.getElementById("flight_state").textContent = flightStates[flightIndex];
+}
 
 function createChart(canvasId, label, dataArray) {
     const ctx = document.getElementById(canvasId).getContext("2d");
@@ -179,9 +206,9 @@ function createChart(canvasId, label, dataArray) {
                 pointRadius: 0
             }]
         },
-       options: {
+        options: {
             responsive: true,
-            maintainAspectRatio: false,  
+            maintainAspectRatio: false,
             animation: false,
             plugins: {
                 legend: {
@@ -190,57 +217,48 @@ function createChart(canvasId, label, dataArray) {
             },
             scales: {
                 x: {
-		    type: 'linear',
-                    ticks: { color: "#aaa", 
-			     callback: function(value, index, ticks) {
-                    	     // Round to exactly two decimal places and return as a string
-                    	     return value.toFixed(2);
-                	     },
-			   },
+                    type: "linear",
+                    ticks: {
+                        color: "#aaa",
+                        callback: function(value) { return value.toFixed(2); }
+                    },
                     grid: { color: "transparent" }
                 },
                 y: {
-                    ticks: { color: "#aaa",
-			     callback: function(value, index, ticks) {
-                    	     // Round to exactly two decimal places and return as a string
-                    	     return value.toFixed(2);
-                	     },
-			   },
+                    ticks: {
+                        color: "#aaa",
+                        callback: function(value) { return value.toFixed(2); }
+                    },
                     grid: { color: "rgba(255,255,255,0.03)" }
                 }
             },
-            interaction: { intersect: false, mode: 'index' }
+            interaction: { intersect: false, mode: "index" }
         }
     });
 }
+
 const altitudeChart = createChart("altitudeChart", "Altitude (m)", altitudeData);
 const pressureChart = createChart("pressureChart", "Pressure (bar)", pressureData);
 const temperatureChart = createChart("temperatureChart", "Temperature (°C)", temperatureData);
 const batteryChart = createChart("batteryChart", "Battery Voltage (V)", batteryData);
 
 function setState(id, isOpen, openText = "Open", closedText = "Closed") {
-const el = document.getElementById(id);
+    const el = document.getElementById(id);
     el.textContent = isOpen ? openText : closedText;
     el.classList.toggle("state-open", isOpen);
     el.classList.toggle("state-closed", !isOpen);
 }
 
-let data = null;   // global
-let new_data = false; 
-async function updateTelemetry() {
-    //const res = await fetch("/telemetry");
-    //const buf = await res.arrayBuffer();
-    // Request data
-    //socket.emit("request_floats");
+let data = null;
+let new_data = false;
 
-    // Receive binary float buffer
+async function updateTelemetry() {
     socket.on("float_buffer", (buf) => {
-        // data is an ArrayBuffer
         data = new Float32Array(buf);
-	new_data = true;
+        new_data = true;
     });
-    if(new_data){
-        // Single readouts
+
+    if (new_data) {
         document.getElementById("pos_x").innerText = data[1].toFixed(2);
         document.getElementById("pos_y").innerText = data[2].toFixed(2);
         document.getElementById("pos_z").innerText = data[3].toFixed(2);
@@ -272,10 +290,9 @@ async function updateTelemetry() {
         document.getElementById("gse_rssi").innerText = data[19].toFixed(2) + " dB";
         document.getElementById("av1_rssi").innerText = data[20].toFixed(2) + " dB";
         document.getElementById("av2_rssi").innerText = data[21].toFixed(2) + " dB";
-                             
-        // Continuous log
+
         const log = document.getElementById("telemetryLog");
-        log.innerHTML += 
+        log.innerHTML +=
             `[${data[0].toFixed(3)}] `
             + `P=${data[15].toFixed(2)} `
             + `T=${data[14].toFixed(2)} `
@@ -283,13 +300,12 @@ async function updateTelemetry() {
             + `Bat=${data[17].toFixed(2)}<br>`;
         log.scrollTop = log.scrollHeight;
 
-        // Time axis
         labels.push(data[0]);
-        altitudeData.push({x: data[0], y: data[16]});
-        pressureData.push({x: data[0], y: data[15]});
-        temperatureData.push({x: data[0], y: data[14]});
-        batteryData.push({x: data[0], y: data[17]});
-    
+        altitudeData.push({ x: data[0], y: data[16] });
+        pressureData.push({ x: data[0], y: data[15] });
+        temperatureData.push({ x: data[0], y: data[14] });
+        batteryData.push({ x: data[0], y: data[17] });
+
         if (labels.length > MAX_POINTS) {
             labels.shift();
             altitudeData.shift();
@@ -302,8 +318,9 @@ async function updateTelemetry() {
         pressureChart.update();
         temperatureChart.update();
         batteryChart.update();
-	new_data = false;
-   }
+
+        new_data = false;
+    }
 }
 
 setInterval(updateTelemetry, 5);
