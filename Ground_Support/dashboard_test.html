@@ -132,6 +132,10 @@ canvas {
                 <div class="card"><div class="label">AV2 Battery</div><div class="value" id="av2_battery">--</div></div>
                 <div class="card"><div class="label">GSE Battery</div><div class="value" id="gse_battery">--</div></div>
 
+                <div class="card"><div class="label">GSE RSSI</div><div class="value" id="gse_rssi">--</div></div>
+                <div class="card"><div class="label">AV1 RSSI</div><div class="value" id="av1_rssi">--</div></div>
+                <div class="card"><div class="label">AV2 RSSI</div><div class="value" id="av2_rssi">--</div></div>
+
             </div>
 
             <!-- Right: 2x2 charts -->
@@ -265,6 +269,10 @@ async function updateTelemetry() {
         document.getElementById("av2_battery").innerText = data[17].toFixed(2) + " V";
         document.getElementById("gse_battery").innerText = data[18].toFixed(2) + " V";
 
+        document.getElementById("gse_rssi").innerText = data[19].toFixed(2) + " dB";
+        document.getElementById("av1_rssi").innerText = data[20].toFixed(2) + " dB";
+        document.getElementById("av2_rssi").innerText = data[21].toFixed(2) + " dB";
+                             
         // Continuous log
         const log = document.getElementById("telemetryLog");
         log.innerHTML += 
