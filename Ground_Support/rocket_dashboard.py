@@ -75,7 +75,7 @@ def serial_thread():
 @app.route("/")
 def index():
     print("New connection")
-    return render_template("dashboard_test.html")
+    return render_template("dashboard.html")
 
 i = 0;
 def get_local_ip():
@@ -126,9 +126,12 @@ def telemetry():
                      data[15],  #16: AV1 Battery Voltage
                      data[16],  #17: AV2 Battery Voltage
                      data[17],  #18: N2O Valve State
-                     data[18],  #18: N2 Valve State
-                     data[19],  #18: Quick Disconnect State
-                     data[20],  #18: Clamshell State
+                     data[18],  #19: N2 Valve State
+                     data[19],  #20: Quick Disconnect State
+                     data[20],  #21: Clamshell State
+                     data[21],  #22: GSE RSSI
+                     data[22],  #23: AV1 RSSI
+                     data[23],  #24: AV2 RSSI
                      ]
         binary_data = struct.pack(str(len(temp_data))+"f", *temp_data)
 
@@ -142,6 +145,7 @@ def run_flask():
     print(f"Server running:")
     print(f"  Local:   http://127.0.0.1:{port}")
     print(f"  Network: http://{local_ip}:{port}")
+
     socketio.start_background_task(telemetry)
     socketio.run(app, host="0.0.0.0", port=port)
 
