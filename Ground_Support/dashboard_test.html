@@ -153,6 +153,10 @@
             <div class="card"><div class="label">AV1 RSSI</div><div class="value" id="av1_rssi">--</div></div>
             <div class="card"><div class="label">AV2 RSSI</div><div class="value" id="av2_rssi">--</div></div>
 
+            <div class="card"><div class="label">GSE ACK</div><div class="value" id="gse_ack">--</div></div>
+            <div class="card"><div class="label">AV1 ACK</div><div class="value" id="av1_ack">--</div></div>
+            <div class="card"><div class="label">AV2 ACK</div><div class="value" id="av2_ack">--</div></div>
+
         </div>
 
         <div class="charts">
@@ -249,6 +253,13 @@ function setState(id, isOpen, openText = "Open", closedText = "Closed") {
     el.classList.toggle("state-closed", !isOpen);
 }
 
+function setAck(id, isOk) {
+    const el = document.getElementById(id);
+    el.textContent = isOk ? "Ok" : "Bad";
+    el.classList.toggle("state-open", isOk);
+    el.classList.toggle("state-closed", !isOk);
+}
+
 let data = null;
 let new_data = false;
 
@@ -290,6 +301,10 @@ async function updateTelemetry() {
         document.getElementById("gse_rssi").innerText = data[19].toFixed(2) + " dB";
         document.getElementById("av1_rssi").innerText = data[20].toFixed(2) + " dB";
         document.getElementById("av2_rssi").innerText = data[21].toFixed(2) + " dB";
+
+        setAck("gse_ack", data[22] > 0); //(more than 0 means Ok, equal to 0 means Bad)
+        setAck("av1_ack", data[23] > 0); //(more than 0 means Ok, equal to 0 means Bad)
+        setAck("av2_ack", data[24] > 0); //(more than 0 means Ok, equal to 0 means Bad)
 
         const log = document.getElementById("telemetryLog");
         log.innerHTML +=
