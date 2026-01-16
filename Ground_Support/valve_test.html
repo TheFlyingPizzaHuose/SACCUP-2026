@@ -5,70 +5,99 @@
 
 <style>
 body {
-  background: #06011f;
+  background: #000;
   color: #9cff9c;
   font-family: Consolas, monospace;
 }
 
-h3 {
-  margin-bottom: 10px;
-}
-
-/* Layout */
 #system {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 14px;
+  gap: 20px;
+}
+
+.header-row {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 0;
+}
+
+/* Row */
+.row {
+  display: flex;
+  flex-direction: row;
+  gap: 20px;
+  align-items: center;
+}
+
+/* Col */
+.col {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  align-items: center;
 }
 
 /* Tanks */
 .tank {
-  width: 80px;
+  width: 90px;
   height: 140px;
   border: 2px solid #00ff66;
   border-radius: 14px;
   text-align: center;
   padding-top: 10px;
-  font-size: 14px;
+}
+.tank.n2 {
+  border-color: #0000ff;
+}
+.tank.n2o { border-color: #f1512d;
+}
+.tank.ox {
+  border-color: #00ff66;
+}
+.tank.comb {
+  border-color: #ff8800;
 }
 
 /* Pipes */
-.pipe {
-  width: 90px;
-  height: 3px;
-  background: #444; 
+.pipe-h {
+  width: 60px;
+  height: 4px;
+  background: #333;
+  margin: auto;s
 }
-.pipe.on {
+.pipe-v {
+  width: 4px;
+  height: 60px;
+  background: #333;
+  margin: auto;
+}
+.pipe-h.on,
+.pipe-v.on {
   background: #00ff66;
+  box-shadow: 0 0 10px #00ff66;
 }
 
-/* Valve */
+/* Valves */
 .valve {
-  width: 70px;
   text-align: center;
+  width: 50px;
 }
 .valve-icon {
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  margin: auto;
   background: #880000;
+  margin: auto;
   cursor: pointer;
 }
-
 .valve-icon.open {
   background: #00aa44;
+  box-shadow: 0 0 12px #00ff66;
 }
 .status {
-  font-size: 12px;
-}
-
-/* Instruments */
-.pt {
-  width: 60px;
-  text-align: center;
-  border: 1px solid #00ff66;
-  padding: 4px;
   font-size: 12px;
 }
 </style>
@@ -77,146 +106,120 @@ h3 {
 <body>
 
 <h2>Rocket Pressure Feed System</h2>
-<br> </br>
 
 <div id="system">
 
-  <!-- N2O Tank -->
-  <div class="tank">
-    N2O<br><span id="pN2O">569.5</span> psi
+  <!-- HEADER ROW -->
+  <div class="header-row">
+
+    <!-- LEFT SECTION -->
+    <div class="left" style="position: relative;">
+
+      <!-- UPPER BRANCH -->
+      <div class="upper row">
+        <div class="tank n2o">N2O</div>
+        <div class="pipe-h" id="pN2O1"></div>
+        <div class="valve">
+          <div id="vN2OV" class="valve-icon"></div>
+          <div class="status" id="sN2OV">CLOSED</div>
+          N2OV
+        </div>
+        <div class="pipe-h" id="pN2O2"></div>
+        <div class="valve">
+          <div id="vSOL1" class="valve-icon"></div>
+          <div class="status" id="sSOL1">CLOSED</div>
+          SOL1
+        </div>
+        <div class="pipe-h" id="pHeader1"></div>
+      </div>
+
+      <!-- LOWER BRANCH -->
+      <div class="lower row" style="position: absolute; top: 160px; left: 10;">
+        <div class="tank n2">N2</div>
+        <div class="pipe-h" id="pN2" style="width: 100px;"></div>
+        <div class="valve">
+          <div id="vN2V" class="valve-icon"></div>
+          <div class="status" id="sN2V">CLOSED</div>
+          N2V
+        </div>
+        <div class="pipe-h" id="pBranch" style="width: 90px;"></div>
+      </div>
+
+      <!-- VERTICAL BRANCH CONNECTOR -->
+      <div class="pipe-v" id="pBranchV" style="position: absolute; top: 75px; left: 390px; height: 163px;"></div>
+    </div>
+
+    <!-- CENTER UPPER (QD) -->
+    <div class="center-upper">
+      <div class="valve">
+        <div id="vQD" class="valve-icon"></div>
+        <div class="status" id="sQD">DISENGAGED</div>
+        QD
+      </div>
+    </div>
+
+    <!-- RIGHT SECTION -->
+    <div class="right row">
+      <div class="pipe-h" id="pOX"></div>
+      <div class="valve">
+        <div id="vSOL2" class="valve-icon"></div>
+        <div class="status" id="sSOL2">CLOSED</div>
+        SOL2
+      </div>
+      <div class="tank ox">OX TANK</div>
+    </div>
+
   </div>
 
-  <div id="pipeN2O" class="pipe"></div>
-
-  <!-- PT2 -->
-  <div class="pt2">
-    PT2<br><span id="pLine">569.5</span> psi
-  </div>
-
-  <div class="pipeN2O"></div>
-
-   <!-- N2OV -->
-  <div class="valve">
-    <div id="vN2O" class="valve-icon"></div>
-    <div class="status" id="sN2O">CLOSED</div>
-    N2OV
-  </div>
-
-  <div class="pipeN2O"></div>
-
-   <!-- SOL1 -->
-  <div class="valve">
-    <div id="vSOL1" class="valve-icon"></div>
-    <div class="status" id="sSOL1">CLOSED</div>
-    SOL1
-  </div>
-
-  <div id="pipeN2O" class="pipe"></div>
-
-  
-   <!-- OX Tank -->
-  <div class="tank">
-    OX<br><span id="pOX">120</span> psi
-  </div>
-
-  <div id="pipeOX" class="pipe"></div>
-
-  <!-- SOL2 -->
-  <div class="valve">
-    <div id="vSOL2" class="valve-icon"></div>
-    <div class="status" id="sSOL2">CLOSED</div>
-    SOL2
-  </div>
-
-  <div id="pipeOX" class="pipe"></div>
-
-  <!-- PT3 -->
-  <div class="pt3">
-    PT3<br><span id="pLine">569.5</span> psi
-  </div>
-
-  <div class="pipeOX"></div>
-
-  <!-- N2 Tank -->
-  <div class="tank">N2<br><span id="pN2">2000</span> psi </div>
-  <div id="pipeN2" class="pipe"></div>
-
-  <!-- REG -->
-  <div class="valve">
-    <div id="vN2O" class="valve-icon"></div>
-    <div class="status" id="sN2O">CLOSED</div>
-    REG</div>
-
-  <!-- MLV2 -->
-  <div class="valve">
-    <div id="vN2" class="valve-icon"></div>
-    <div class="status" id="sN2">CLOSED</div>
-    MLV2
-  </div>
-
-  <div class="pipe"></div>
-
-  <!-- N2O Tank -->
-  <div class="tank">
-    N2O<br><span id="pN2O">569.5</span> psi
-  </div>
-
-  <div id="pipeN2O" class="pipe"></div>
-
-  <!-- MLV1 -->
-  <div class="valve">
-    <div id="vN2O" class="valve-icon"></div>
-    <div class="status" id="sN2O">CLOSED</div>
-    MLV1
-  </div>
-
-  <div class="pipe"></div>
-
-  <!-- MEV -->
-  <div class="valve">
-    <div id="vMEV" class="valve-icon"></div>
-    <div class="status" id="sMEV">CLOSED</div>
-    MEV
-  </div>
-
-  <div class="pipe"></div>
-
-  <!-- Combustion -->
-  <div class="tank">
-    COMB
+  <!-- LOWER COLUMN -->
+  <div class="lower-col col">
+    <div class="pipe-v" id="pDown" style="height: 90px;"></div>
+    <div class="valve">
+      <div id="vMEV" class="valve-icon"></div>
+      <div class="status" id="sMEV">CLOSED</div>
+      MEV
+    </div>
+    <div class="pipe-v" id="pComb" style="height: 60px;"></div>
+    <div class="tank comb">Combustion Chamber</div>
   </div>
 
 </div>
 
 <script>
 let valves = {
-  N2: false,
-  N2O: false,
+  N2OV: false,
   SOL1: false,
+  N2V: false,
+  QD: false,
+  SOL2: false,
   MEV: false
 };
 
 function update() {
-  // Update valve visuals
-  Object.keys(valves).forEach(k => {
-    const v = document.getElementById("v" + k);
-    const s = document.getElementById("s" + k);
-    v.classList.toggle("open", valves[k]);
-    s.textContent = valves[k] ? "OPEN" : "CLOSED";
-  });
+  for (let k in valves) {
+    document.getElementById("v"+k).classList.toggle("open", valves[k]);
+    let openText = (k === 'QD') ? 'ENGAGED' : 'OPEN';
+    let closedText = (k === 'QD') ? 'DISENGAGED' : 'CLOSED';
+    document.getElementById("s"+k).textContent = valves[k] ? openText : closedText;
+  }
 
-  // Flow logic
-  const feedOpen = valves.N2 && valves.N2O && valves.SOL1;
+  let headerOpen = (valves.N2OV && valves.SOL1) || valves.N2V;
+  let qdOpen = headerOpen && valves.QD;
+  let oxOpen = valves.SOL2 && valves.QD;
+  let mevOpen = qdOpen && oxOpen && valves.MEV;
 
-  document.getElementById("pipeN2").classList.toggle("on", valves.N2);
-  document.getElementById("pipeN2O").classList.toggle("on", valves.N2O);
-  document.getElementById("pipeMain").classList.toggle("on", feedOpen);
-  document.getElementById("pipeOX").classList.toggle("on", feedOpen && valves.MEV);
-
-  document.getElementById("pLine").textContent = feedOpen ? "400" : "0";
+  document.getElementById("pN2O1").classList.toggle("on", valves.N2OV);
+  document.getElementById("pN2O2").classList.toggle("on", valves.SOL1);
+  document.getElementById("pHeader1").classList.toggle("on", headerOpen);
+  document.getElementById("pN2").classList.toggle("on", valves.N2V);
+  document.getElementById("pBranch").classList.toggle("on", valves.N2V);
+  document.getElementById("pBranchV").classList.toggle("on", valves.N2V);
+  document.getElementById("pOX").classList.toggle("on", oxOpen);
+  document.getElementById("pDown").classList.toggle("on", qdOpen);
+  document.getElementById("pComb").classList.toggle("on", mevOpen);
 }
 
-["N2","N2O","SOL1","MEV"].forEach(k => {
+Object.keys(valves).forEach(k => {
   document.getElementById("v"+k).onclick = () => {
     valves[k] = !valves[k];
     update();
