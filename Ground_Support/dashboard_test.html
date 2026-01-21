@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html>
 <head>
@@ -28,6 +27,34 @@
         gap: 1vh;
         min-height: 0;
     }
+
+    /* LEFT COLUMN WRAPPER */
+    .left-panel {
+        display: flex;
+        flex-direction: column;
+        gap: 1vh;
+        min-height: 0;
+    }
+
+    /* FLIGHT STATE BANNER */
+    .flightstate-banner {
+        background: #111827;
+        border-radius: 1vh;
+        padding: 1vh;
+        text-align: center;
+    }
+    .flightstate-banner .label {
+        font-size: clamp(10px, 1vw, 14px);
+        color: #9ca3af;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+    }
+    .flightstate-banner .value {
+        font-size: clamp(18px, 2.2vw, 32px);
+        font-weight: 800;
+        margin: 0.5vh 0;
+    }
+
     .readouts {
         display: grid;
         grid-template-columns: repeat(2, 1fr);
@@ -113,52 +140,60 @@
 
 <div class="page">
     <div class="top">
-        <div class="readouts" id="readoutsGrid">
 
-            <div class="card"><div class="label">Pos X</div><div class="value" id="pos_x">--</div></div>
-            <div class="card"><div class="label">Pos Y</div><div class="value" id="pos_y">--</div></div>
-            <div class="card"><div class="label">Pos Z</div><div class="value" id="pos_z">--</div></div>
-            <div class="card"><div class="label">Vel X</div><div class="value" id="vel_x">--</div></div>
+        <!-- LEFT COLUMN -->
+        <div class="left-panel">
 
-            <div class="card"><div class="label">Vel Y</div><div class="value" id="vel_y">--</div></div>
-            <div class="card"><div class="label">Vel Z</div><div class="value" id="vel_z">--</div></div>
-            <div class="card"><div class="label">Theta</div><div class="value" id="theta">--</div></div>
-            <div class="card"><div class="label">Phi</div><div class="value" id="phi">--</div></div>
-
-            <div class="card"><div class="label">Supply Tank Temp</div><div class="value" id="supply_tank_temp">--</div></div>
-            <div class="card"><div class="label">Rocket Tank Temp</div><div class="value" id="rocket_tank_temp">--</div></div>
-            <div class="card"><div class="label">N20 Line Pressure</div><div class="value" id="n20_line_pressure">--</div></div>
-            <div class="card"><div class="label">N2 Line Pressure</div><div class="value" id="n2_line_pressure">--</div></div>
-            <div class="card"><div class="label">Load Cell Reading</div><div class="value" id="load_cell_reading">--</div></div>
-
-            <div class="card"><div class="label">N₂O Valve</div><div class="value" id="n2o_valve">--</div></div>
-            <div class="card"><div class="label">N₂ Valve</div><div class="value" id="n2_valve">--</div></div>
-            <div class="card"><div class="label">Relief</div><div class="value" id="relief_valve">--</div></div>
-            <div class="card"><div class="label">QD</div><div class="value" id="quick_disconnect">--</div></div>
-            <div class="card"><div class="label">Clamshell</div><div class="value" id="clamshell">--</div></div>
-
-            <div class="card">
+            <!-- FLIGHT STATE BANNER -->
+            <div class="flightstate-banner">
                 <div class="label">Flight State</div>
-                <div class="value" id="flight_state">liftoff</div>
+                <div class="value" id="flight_state">Liftoff</div>
                 <button class="mini-btn" onclick="nextFlightState()">Next</button>
             </div>
 
-            <div class="card"><div class="label">Pressure</div><div class="value" id="pressure">--</div></div>
-            <div class="card"><div class="label">Temperature</div><div class="value" id="temperature">--</div></div>
-            <div class="card"><div class="label">AV1 Battery</div><div class="value" id="av1_battery">--</div></div>
-            <div class="card"><div class="label">AV2 Battery</div><div class="value" id="av2_battery">--</div></div>
-            <div class="card"><div class="label">GSE Battery</div><div class="value" id="gse_battery">--</div></div>
+            <!-- READOUT GRID -->
+            <div class="readouts" id="readoutsGrid">
 
-            <div class="card"><div class="label">GSE RSSI</div><div class="value" id="gse_rssi">--</div></div>
-            <div class="card"><div class="label">AV1 RSSI</div><div class="value" id="av1_rssi">--</div></div>
-            <div class="card"><div class="label">AV2 RSSI</div><div class="value" id="av2_rssi">--</div></div>
+                <div class="card"><div class="label">Pos X</div><div class="value" id="pos_x">--</div></div>
+                <div class="card"><div class="label">Pos Y</div><div class="value" id="pos_y">--</div></div>
+                <div class="card"><div class="label">Pos Z</div><div class="value" id="pos_z">--</div></div>
+                <div class="card"><div class="label">Vel X</div><div class="value" id="vel_x">--</div></div>
 
-            <div class="card"><div class="label">GSE ACK</div><div class="value" id="gse_ack">--</div></div>
-            <div class="card"><div class="label">AV1 ACK</div><div class="value" id="av1_ack">--</div></div>
-            <div class="card"><div class="label">AV2 ACK</div><div class="value" id="av2_ack">--</div></div>
+                <div class="card"><div class="label">Vel Y</div><div class="value" id="vel_y">--</div></div>
+                <div class="card"><div class="label">Vel Z</div><div class="value" id="vel_z">--</div></div>
+                <div class="card"><div class="label">Theta</div><div class="value" id="theta">--</div></div>
+                <div class="card"><div class="label">Phi</div><div class="value" id="phi">--</div></div>
 
+                <div class="card"><div class="label">Supply Tank Temp</div><div class="value" id="supply_tank_temp">--</div></div>
+                <div class="card"><div class="label">Rocket Tank Temp</div><div class="value" id="rocket_tank_temp">--</div></div>
+                <div class="card"><div class="label">N20 Line Pressure</div><div class="value" id="n20_line_pressure">--</div></div>
+                <div class="card"><div class="label">N2 Line Pressure</div><div class="value" id="n2_line_pressure">--</div></div>
+                <div class="card"><div class="label">Load Cell Reading</div><div class="value" id="load_cell_reading">--</div></div>
+
+                <div class="card"><div class="label">N₂O Valve</div><div class="value" id="n2o_valve">--</div></div>
+                <div class="card"><div class="label">N₂ Valve</div><div class="value" id="n2_valve">--</div></div>
+                <div class="card"><div class="label">Relief</div><div class="value" id="relief_valve">--</div></div>
+                <div class="card"><div class="label">QD</div><div class="value" id="quick_disconnect">--</div></div>
+                <div class="card"><div class="label">Clamshell</div><div class="value" id="clamshell">--</div></div>
+
+                <div class="card"><div class="label">Pressure</div><div class="value" id="pressure">--</div></div>
+                <div class="card"><div class="label">Temperature</div><div class="value" id="temperature">--</div></div>
+                <div class="card"><div class="label">AV1 Battery</div><div class="value" id="av1_battery">--</div></div>
+                <div class="card"><div class="label">AV2 Battery</div><div class="value" id="av2_battery">--</div></div>
+                <div class="card"><div class="label">GSE Battery</div><div class="value" id="gse_battery">--</div></div>
+
+                <div class="card"><div class="label">GSE RSSI</div><div class="value" id="gse_rssi">--</div></div>
+                <div class="card"><div class="label">AV1 RSSI</div><div class="value" id="av1_rssi">--</div></div>
+                <div class="card"><div class="label">AV2 RSSI</div><div class="value" id="av2_rssi">--</div></div>
+
+                <div class="card"><div class="label">GSE ACK</div><div class="value" id="gse_ack">--</div></div>
+                <div class="card"><div class="label">AV1 ACK</div><div class="value" id="av1_ack">--</div></div>
+                <div class="card"><div class="label">AV2 ACK</div><div class="value" id="av2_ack">--</div></div>
+
+            </div>
         </div>
 
+        <!-- CHARTS -->
         <div class="charts">
             <div class="chart-container"><canvas id="altitudeChart"></canvas></div>
             <div class="chart-container"><canvas id="pressureChart"></canvas></div>
@@ -188,7 +223,7 @@ let pressureData = [];
 let temperatureData = [];
 let batteryData = [];
 
-const flightStates = ["liftoff", "burnout", "apogee", "drogue", "main", "landed"];
+const flightStates = ["Liftoff", "Burnout", "Apogee", "Drogue", "Main", "Landed"];
 let flightIndex = 0;
 
 function nextFlightState() {
@@ -302,9 +337,9 @@ async function updateTelemetry() {
         document.getElementById("av1_rssi").innerText = data[20].toFixed(2) + " dB";
         document.getElementById("av2_rssi").innerText = data[21].toFixed(2) + " dB";
 
-        setAck("gse_ack", data[22] > 0); //(more than 0 means Ok, equal to 0 means Bad)
-        setAck("av1_ack", data[23] > 0); //(more than 0 means Ok, equal to 0 means Bad)
-        setAck("av2_ack", data[24] > 0); //(more than 0 means Ok, equal to 0 means Bad)
+        setAck("gse_ack", data[22] > 0);
+        setAck("av1_ack", data[23] > 0);
+        setAck("av2_ack", data[24] > 0);
 
         const log = document.getElementById("telemetryLog");
         log.innerHTML +=
