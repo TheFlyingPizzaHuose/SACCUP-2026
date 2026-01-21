@@ -1,3 +1,8 @@
+//WIP: 
+//1. 2nd Load Cell Read
+//2. Radio Checksum verification
+//3. <100kHz radio bandwidth
+
 /*
 Saint Louis University Rocket Propulsion Laboratory (SLURPL)
 
@@ -30,16 +35,20 @@ File logfile;
 #define RFM95_CS 10
 #define RFM95_INT 8
 #define RFM95_RST 9
-#define GSE_FREQ 432.92
 // Singleton instance of the radio driver
 RH_RF95 rf95(RFM95_CS,RFM95_INT);
 const int RFM95_PWR = 23;
 
-//Valve MOSFET pin assignments
-#define N2O_pin 7
+//Valve MOSFET pin assignments: Refer to GSE KICAD schematic
+#define N2O_pin 20 //A6
+#define N2_pin 7
+#define IGNITER_pin 6
+#define POPPET_pin 14 //A0
+#define AC_pin 2
+#define QD_pin 23
 
 //Command Message Class
-uint8_t msg_class_01[17][10] = {{1,1,1}, //Ignition Abort
+uint8_t msg_class_01[20][10] = {{1,1,1}, //Ignition Abort
                               {1,1,1}, //Avionics & Pad Arm
                               {1,1,1}, //Ignition Sequence Start
                               {1,1,1}, //N2O Fill Valve Open
@@ -56,6 +65,9 @@ uint8_t msg_class_01[17][10] = {{1,1,1}, //Ignition Abort
                               {1,1,1}, //Tare Scale 2
                               {1,1,1}, //AV1 Inertial Align
                               {1,1,1}, //AV2 Inertial Align
+                              {1,1,1,5}, //Set GSE Radio Frequency
+                              {1,1,1,5}, //Set AV1 Radio Frequency
+                              {1,1,1,5} //Set AV2 Radio Frequency
                               };
 
 uint8_t msg_class_02[6][10] = {{5,5,5,5,5,5,5,5,5,5}, //AV1 Telemetry
@@ -117,19 +129,19 @@ const uint32_t num_samples = 100;
 #endif
 
 const uint8_t pressure_1_pin = A3;
-const float press_1_R1 = 680; //Ohm
+/*const float press_1_R1 = 680; //Ohm
 const float press_1_R2 = 330; //Ohm
 const float pressure_max = 2500; //PSI
 const float press_1_ratio = (press_1_R1+press_1_R2)/(press_1_R2);
 const float pressure_1_min_volt = 0.5/press_1_ratio;
-const float pressure_1_max_volt = 4.5/press_1_ratio-pressure_1_min_volt;
+const float pressure_1_max_volt = 4.5/press_1_ratio-pressure_1_min_volt;*/
 
 const uint8_t pressure_2_pin = A2;
-const float press_2_R1 = 680; //Ohm
+/*const float press_2_R1 = 680; //Ohm
 const float press_2_R2 = 330; //Ohm
 const float press_2_ratio = (press_2_R1+press_2_R2)/(press_2_R2);
 const float pressure_2_min_volt = 0.5/press_2_ratio;
-const float pressure_2_max_volt = 4.5/press_2_ratio-pressure_2_min_volt;
+const float pressure_2_max_volt = 4.5/press_2_ratio-pressure_2_min_volt;*/
 
 const uint8_t temp_1_pin = A8;
 const float temp_1_R = 47800; //Ohm
@@ -137,6 +149,10 @@ const float temp_1_R = 47800; //Ohm
 const uint8_t temp_2_pin = A7;
 const float temp_2_R = 46500; //Ohm
 //===============Dynamic Variables===============
+
+// Different Computer Frequencies
+float GSE_FREQ = 432.875;
+
 char* log_file_name;
 
 //Valve states
@@ -249,8 +265,10 @@ void setup() {
 
   //===HX711 LOAD CELL AMP INIT===
   scale.begin(DOUT, CLK);
-  scale.set_scale(load_cell_scale);
-  scale.tare();
+  if(scale.is_ready()){
+    scale.set_scale(load_cell_scale);
+    scale.tare();
+  }
 
   //===ADC0 SETUP===
   pinMode(pressure_1_pin, INPUT);
@@ -271,6 +289,14 @@ void setup() {
     adc->adc1->setSamplingSpeed(ADC_SAMPLING_SPEED::MED_SPEED);     // change the sampling speed
     adc->adc1->recalibrate();
   #endif
+
+  //===Control Pins Setup===
+  pinMode(N2O_pin, OUTPUT);
+  pinMode(N2_pin, OUTPUT);
+  pinMode(IGNITER_pin, OUTPUT);
+  pinMode(POPPET_pin, OUTPUT);
+  pinMode(AC_pin, OUTPUT);
+  pinMode(QD_pin, OUTPUT);
 }
 
 void loop()
@@ -278,18 +304,63 @@ void loop()
   read_RFM();
   read_load_cell();
   read_pressure();
+  prep_telem();
+  send_RFM();
 }
 //==========COMMAND CODE==========Alleon Oxales
 void perform_command(uint8_t msg_class, uint8_t msg_id){
-  if(msg_class == 1){
-    switch(msg_id){
-      case 0x0B:
-        tare_load_cell();
-        break;
-      default:
-        break;
+  if(msg_class == 0x01){
+    if(out_flag[0] == 0xFF && out_flag[1] == 0xFF && out_flag[2] == 0xFF){
+      switch(msg_id){
+        case 0x01: //Ignition Abort
+          break;
+        case 0x02: //Launch Arm
+          break;
+        case 0x03: //Ignition Sequence Start
+          break;
+        case 0x04: //N2O Fill Valve Open
+          digitalWrite(N2O_pin, HIGH);
+          break;
+        case 0x05: //N2O Fill Valve Close
+          digitalWrite(N2O_pin, LOW);
+          break;
+        case 0x06: //N2 Fill Valve Open
+          digitalWrite(N2_pin, HIGH);
+          break;
+        case 0x07: //N2 Fill Valve Closed
+          digitalWrite(N2_pin, LOW);
+          break;
+        case 0x08: //Relief Valve Open
+          digitalWrite(POPPET_pin, LOW);
+          break;
+        case 0x09: //Relief Valve Closed
+          digitalWrite(POPPET_pin, HIGH);//It's high for closed since poppet is normally open
+          break;
+        case 0x0A: //Disconnect Rocket Fill Line
+          break;
+        case 0x0B: //Enable TX
+          break;
+        case 0x0C: //Disable TX
+          break;
+        case 0x0D: //Tare Scale 1
+          tare_load_cell();
+          break;
+        case 0x0E: //Tare Scale 2
+          break;
+        case 0x12:{ //Set GSE Ratio Frequency
+          GSE_FREQ = out_floats[3];
+          rf95.setFrequency(GSE_FREQ);
+          break;
+        }
+        default:
+          break;
+      }
     }
   }
+  //Reset out flags so they have to be sent again for a command to be sucessful
+  out_flag[0] = 0;
+  out_flag[1] = 0;
+  out_flag[2] = 0;
 }
 //==========LOAD CELL CODE==========Alleon Oxales
 void read_load_cell(){
@@ -325,13 +396,13 @@ float read_voltage(uint8_t pin) {//Kartik Function to read true voltage from a v
 void read_pressure(){//Alleon Oxales
   if(micros()-Pressure_last_time > Pres_rate){
     float voltage = read_voltage(pressure_1_pin);
-    pressure_1_output = 2500*(voltage-pressure_1_min_volt)/pressure_1_max_volt;
+    pressure_1_output = 1000*voltage;
     logfile.print(micros());
     logfile.print("|1|");
     logfile.println(pressure_1_output);
 
     voltage = read_voltage(pressure_2_pin);
-    pressure_2_output = voltage * 1000;
+    pressure_2_output = 1.0228*1000*voltage-315.24917	;//Callibration function
     logfile.print(micros());
     logfile.print("|2|");
     logfile.println(pressure_2_output);
@@ -509,6 +580,16 @@ void message_assembler(uint8_t msg_class, uint8_t msg_id){
   message_send_buf[buffer_index] = radio_checksum(message_send_buf, buffer_index);
   buffer_index++;
   message_send_len = buffer_index;
+  msg_ready = 1;
+}
+void prep_telem(){
+  in_floats[0] = temp_1_output;
+  in_floats[1] = temp_2_output;
+  in_floats[2] = pressure_1_output;
+  in_floats[3] = pressure_2_output;
+  in_floats[4] = load_cell_output;
+  in_floats[5] = 0;
+  message_assembler(0x02, 0x03);
   msg_ready = 1;
 }
 //==========Data Type Conversion==========Alleon Oxales
