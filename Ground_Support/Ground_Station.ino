@@ -1,3 +1,7 @@
+//WIP: 
+//1. Radio Checksum verification
+//2. <100kHz radio bandwidth
+
 /*
 Saint Louis University Rocket Propulsion Laboratory (SLURPL)
 
@@ -22,17 +26,13 @@ https://docs.google.com/document/d/1AqIgfhQb1Wmkl7yFG0nSHRvpzL-viViXBCPfHbvtkt0/
 #define RFM95_CS    4
 #define RFM95_INT   3
 #define RFM95_RST   2
-// Different Computer Frequencies
-#define GSE_FREQ 432.92
-#define AV1_FREQ 433.0
-#define AV2_FREQ 433.08
 
 // Singleton instance of the radio driver
 RH_RF95 rf95(RFM95_CS, RFM95_INT);
 const int RFM95_PWR = 23;
 
 //Command Message Class
-uint8_t msg_class_01[17][10] = {{1,1,1}, //Ignition Abort
+uint8_t msg_class_01[20][10] = {{1,1,1}, //Ignition Abort
                               {1,1,1}, //Avionics & Pad Arm
                               {1,1,1}, //Ignition Sequence Start
                               {1,1,1}, //N2O Fill Valve Open
@@ -49,9 +49,11 @@ uint8_t msg_class_01[17][10] = {{1,1,1}, //Ignition Abort
                               {1,1,1}, //Tare Scale 2
                               {1,1,1}, //AV1 Inertial Align
                               {1,1,1}, //AV2 Inertial Align
+                              {1,1,1,5}, //Set GSE Radio Frequency
+                              {1,1,1,5}, //Set AV1 Radio Frequency
+                              {1,1,1,5} //Set AV2 Radio Frequency
                               };
 
-//Telemetry Message Class
 uint8_t msg_class_02[6][10] = {{5,5,5,5,5,5,5,5,5,5}, //AV1 Telemetry
                               {5,5,5,5,5,5,5,5,5,5}, //AV2 Telemetry
                               {5,5,5,5,5}, //GSE Temps, Presses, Supply and Rocket Mass
@@ -61,14 +63,14 @@ uint8_t msg_class_02[6][10] = {{5,5,5,5,5,5,5,5,5,5}, //AV1 Telemetry
                               };
                               
 //Alert Message Class
-uint8_t msg_class_03[7][10] = {{1,1,1}, //No Igniter Continuity
-                              {1,1,1}, //Quick Disconnect Fail
-                              {1,1,1}, //Clamshell Fail
-                              {1,1,1}, //GPS Lock Fail
-                              {4}, //Rocket List of Failed Sensors
-                              {4}, //GSE List of Failed Sensors
-                              {2} //Rocket Computer Reset Register Value
-                              };
+u_int8_t msg_class_03[7][10] = {{1,1,1}, //No Igniter Continuity
+                                      {1,1,1}, //Quick Disconnect Fail
+                                      {1,1,1}, //Clamshell Fail
+                                      {1,1,1}, //GPS Lock Fail
+                                      {4}, //Rocket List of Failed Sensors
+                                      {4}, //GSE List of Failed Sensors
+                                      {2}, //Rocket Computer Reset Register Value
+                                      };
 
 //Time between component usages in micros
 const uint RFM9x_rate = 50000;
@@ -76,6 +78,11 @@ const uint SD_rate = 50000;
 //const uint PC_rate = 40000; <Not needed cuz PC telem gets sent everytime telem is recieved.
 
 //===============Dynamic Variables===============
+
+// Different Computer Frequencies
+float GSE_FREQ = 432.875;
+float AV1_FREQ = 433.0;
+float AV2_FREQ = 433.125;
 
 //3 arrays w/ 100 bools store if previous RSSI greater than -50
 //Indecies also present, used when writing and index get's reset at i=99
@@ -183,7 +190,7 @@ void setup() {
 
   // ... more setup steps, get USB ready ...
   resetCause(lastResetCause);
-
+  /*
   pinMode(RFM95_RST, OUTPUT);
   Serial.println("Reset RFM9x");
 
@@ -191,7 +198,7 @@ void setup() {
   digitalWrite(RFM95_RST, HIGH);
   delay(10);
   digitalWrite(RFM95_RST, LOW);
-  delay(10);
+  delay(10);*/
   if (!rf95.init()){
     Serial.println("RFM9x init failed");  
   }else{
@@ -199,6 +206,7 @@ void setup() {
     rf95.setFrequency(GSE_FREQ);
     rf95.setTxPower(RFM95_PWR, false);
   }
+  Serial.println("Type \"h\" for a list of commands");
 }
 
 void loop() {
@@ -212,6 +220,7 @@ void send_command(){
     char command = Serial.read();
     uint8_t command_id = 0;
     switch(command){//Switch case is best so it doesn't send a command if input is incorrect
+      case 'h': print_command_list(); break;
       case '1': command_id = 0x01; break;
       case '2': command_id = 0x02; break;
       case '3': command_id = 0x03; break;
@@ -229,6 +238,18 @@ void send_command(){
       case 'F': command_id = 0x0F; break;
       case 'G': command_id = 0x10; break;
       case 'H': command_id = 0x11; break;
+      case 'I':{
+        command_id = 0x12; break;
+        in_floats[3] = GSE_FREQ;
+      } 
+      case 'J':{
+        command_id = 0x13; break;
+        in_floats[3] = AV1_FREQ;
+      } 
+      case 'K':{
+        command_id = 0x14; break;
+        in_floats[3] = AV2_FREQ;
+      } 
     }
     set_command_msg(command_id);
   }
@@ -239,6 +260,28 @@ void set_command_msg(uint8_t command_id){
   in_flag[2] = 0xFF;
   message_assembler(0x01, command_id);
   msg_ready = 1;
+}
+void print_command_list(){
+  Serial.println("1: Ignition Abort");
+  Serial.println("2: Launch Arm");
+  Serial.println("3: Ignition Sequence Start");
+  Serial.println("4: N2O Fill Valve Open");
+  Serial.println("5: N2O Fill Valve Closed");
+  Serial.println("6: N2 Fill Valve Open");
+  Serial.println("7: N2 Fill Valve Closed");
+  Serial.println("8: Relief Valve Open");
+  Serial.println("9: Relief Valve Closed");
+  Serial.println("A: Disconnect Rocket Fill Line");
+  Serial.println("B: Enable TX");
+  Serial.println("C: Disable TX");
+  Serial.println("D: Tare Supply Tank Load Cell");
+  Serial.println("E: Tare Rocket Tank Load Cell");
+  Serial.println("F: AV1 Inertial Align");
+  Serial.println("G: AV2 Inertial Align");
+  Serial.println("H: AV2 Inertial Align");
+  Serial.println("I: Set GSE Radio Frequency");
+  Serial.println("J: Set AV1 Radio Frequency");
+  Serial.println("K: Set AV2 Radio Frequency");
 }
 //==========TELEMETRY CODE==========Alleon Oxales
 void read_telem(uint8_t msg_class, uint8_t msg_id){
