@@ -2,7 +2,7 @@
 <html>
 <head>
     <title>Rocket Telemetry Dashboard</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="http://127.0.0.1:3000/chart.js"></script>
 
     <style>
     html, body {
@@ -16,14 +16,14 @@
     .page {
         height: 100vh;
         display: grid;
-        grid-template-rows: 72fr 28fr;
+        grid-template-rows: 80fr 20fr;
         gap: 1vh;
         padding: 1vh;
         box-sizing: border-box;
     }
     .top {
         display: grid;
-        grid-template-columns: 15fr 70fr;
+        grid-template-columns: 30fr 70fr;
         gap: 1vh;
         min-height: 0;
     }
@@ -57,7 +57,7 @@
 
     .readouts {
         display: grid;
-        grid-template-columns: repeat(2, 1fr);
+        grid-template-columns: repeat(3, 1fr);
         gap: 0.1vh;
         padding: 1vh;
         border-radius: 1vh;
@@ -162,7 +162,6 @@
                 <div class="card"><div class="label">Vel Y</div><div class="value" id="vel_y">--</div></div>
                 <div class="card"><div class="label">Vel Z</div><div class="value" id="vel_z">--</div></div>
                 <div class="card"><div class="label">Theta</div><div class="value" id="theta">--</div></div>
-                <div class="card"><div class="label">Phi</div><div class="value" id="phi">--</div></div>
 
                 <div class="card"><div class="label">Supply Tank Temp</div><div class="value" id="supply_tank_temp">--</div></div>
                 <div class="card"><div class="label">Rocket Tank Temp</div><div class="value" id="rocket_tank_temp">--</div></div>
@@ -205,8 +204,7 @@
     <div class="log" id="telemetryLog"></div>
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"
-        integrity="sha512-q/dWJ3kcmjBLU4Qc47E4A9kTB4m3wuTY7vkFJDTZKjTs8jhyGQnaUrxa0Ytd0ssMZhbNua9hE+E7Qv1j+DyZwA=="
+<script src="http://127.0.0.1:3000/socket.io/socket.io.js"
         crossorigin="anonymous"></script>
 
 <script>
@@ -313,13 +311,12 @@ async function updateTelemetry() {
         document.getElementById("vel_z").innerText = data[6].toFixed(2) + " m/s";
 
         document.getElementById("theta").innerText = data[7].toFixed(2) + " °";
-        document.getElementById("phi").innerText = data[8].toFixed(2) + " °";
 
-        document.getElementById("supply_tank_temp").innerText = data[9].toFixed(2) + " °C";
-        document.getElementById("rocket_tank_temp").innerText = data[10].toFixed(2) + " °C";
-        document.getElementById("n20_line_pressure").innerText = data[11].toFixed(2) + " bar";
-        document.getElementById("n2_line_pressure").innerText = data[12].toFixed(2) + " bar";
-        document.getElementById("load_cell_reading").innerText = data[13].toFixed(2) + " lb";
+        document.getElementById("supply_tank_temp").innerText = data[8].toFixed(2) + " °C";
+        document.getElementById("rocket_tank_temp").innerText = data[9].toFixed(2) + " °C";
+        document.getElementById("n20_line_pressure").innerText = data[10].toFixed(2) + " bar";
+        document.getElementById("n2_line_pressure").innerText = data[11].toFixed(2) + " bar";
+        document.getElementById("load_cell_reading").innerText = data[12].toFixed(2) + " lb";
 
         setState("n2o_valve", 0, "Open", "Closed");
         setState("n2_valve", 0, "Open", "Closed");
@@ -327,19 +324,19 @@ async function updateTelemetry() {
         setState("quick_disconnect", 0, "Engaged", "Disengaged");
         setState("clamshell", 0, "Open", "Closed");
 
-        document.getElementById("temperature").innerText = data[14].toFixed(2) + " °C";
-        document.getElementById("pressure").innerText = data[15].toFixed(2) + " bar";
-        document.getElementById("av1_battery").innerText = data[16].toFixed(2) + " V";
-        document.getElementById("av2_battery").innerText = data[17].toFixed(2) + " V";
-        document.getElementById("gse_battery").innerText = data[18].toFixed(2) + " V";
+        document.getElementById("temperature").innerText = data[13].toFixed(2) + " °C";
+        document.getElementById("pressure").innerText = data[14].toFixed(2) + " bar";
+        document.getElementById("av1_battery").innerText = data[15].toFixed(2) + " V";
+        document.getElementById("av2_battery").innerText = data[16].toFixed(2) + " V";
+        document.getElementById("gse_battery").innerText = data[17].toFixed(2) + " V";
 
-        document.getElementById("gse_rssi").innerText = data[19].toFixed(2) + " dB";
-        document.getElementById("av1_rssi").innerText = data[20].toFixed(2) + " dB";
-        document.getElementById("av2_rssi").innerText = data[21].toFixed(2) + " dB";
+        document.getElementById("gse_rssi").innerText = data[18].toFixed(2) + " dB";
+        document.getElementById("av1_rssi").innerText = data[19].toFixed(2) + " dB";
+        document.getElementById("av2_rssi").innerText = data[20].toFixed(2) + " dB";
 
-        setAck("gse_ack", data[22] > 0);
-        setAck("av1_ack", data[23] > 0);
-        setAck("av2_ack", data[24] > 0);
+        setAck("gse_ack", data[21] > 0);
+        setAck("av1_ack", data[22] > 0);
+        setAck("av2_ack", data[23] > 0);
 
         const log = document.getElementById("telemetryLog");
         log.innerHTML +=
@@ -351,8 +348,8 @@ async function updateTelemetry() {
         log.scrollTop = log.scrollHeight;
 
         labels.push(data[0]);
-        altitudeData.push({ x: data[0], y: data[16] });
-        pressureData.push({ x: data[0], y: data[15] });
+        altitudeData.push({ x: data[0], y: data[10] });
+        pressureData.push({ x: data[0], y: data[11] });
         temperatureData.push({ x: data[0], y: data[14] });
         batteryData.push({ x: data[0], y: data[17] });
 
