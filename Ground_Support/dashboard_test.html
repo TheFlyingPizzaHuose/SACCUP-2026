@@ -2,7 +2,7 @@
 <html>
 <head>
     <title>Rocket Telemetry Dashboard</title>
-    <script src="http://127.0.0.1:3000/chart.js"></script>
+    <script src="/chart.js"></script>
 
     <style>
     html, body {
@@ -147,8 +147,7 @@
             <!-- FLIGHT STATE BANNER -->
             <div class="flightstate-banner">
                 <div class="label">Flight State</div>
-                <div class="value" id="flight_state">Liftoff</div>
-                <button class="mini-btn" onclick="nextFlightState()">Next</button>
+                <div class="value" id="flight_state">Pad</div>
             </div>
 
             <!-- READOUT GRID -->
@@ -157,29 +156,35 @@
                 <div class="card"><div class="label">Pos X</div><div class="value" id="pos_x">--</div></div>
                 <div class="card"><div class="label">Pos Y</div><div class="value" id="pos_y">--</div></div>
                 <div class="card"><div class="label">Pos Z</div><div class="value" id="pos_z">--</div></div>
-                <div class="card"><div class="label">Vel X</div><div class="value" id="vel_x">--</div></div>
 
+                <div class="card"><div class="label">Vel X</div><div class="value" id="vel_x">--</div></div>
                 <div class="card"><div class="label">Vel Y</div><div class="value" id="vel_y">--</div></div>
                 <div class="card"><div class="label">Vel Z</div><div class="value" id="vel_z">--</div></div>
+                
                 <div class="card"><div class="label">Theta</div><div class="value" id="theta">--</div></div>
 
-                <div class="card"><div class="label">Supply Tank Temp</div><div class="value" id="supply_tank_temp">--</div></div>
-                <div class="card"><div class="label">Rocket Tank Temp</div><div class="value" id="rocket_tank_temp">--</div></div>
-                <div class="card"><div class="label">N20 Line Pressure</div><div class="value" id="n20_line_pressure">--</div></div>
-                <div class="card"><div class="label">N2 Line Pressure</div><div class="value" id="n2_line_pressure">--</div></div>
-                <div class="card"><div class="label">Load Cell Reading</div><div class="value" id="load_cell_reading">--</div></div>
+                <div class="card"><div class="label">Supply Temp</div><div class="value" id="supply_tank_temp">--</div></div>
+                <div class="card"><div class="label">Rocket Temp</div><div class="value" id="rocket_tank_temp">--</div></div>
+                <div class="card"><div class="label">N20 Line Pres</div><div class="value" id="n20_line_pressure">--</div></div>
+                <div class="card"><div class="label">N2 Line Pres</div><div class="value" id="n2_line_pressure">--</div></div>
+
+                <div class="card"><div class="label">Supply Weight</div><div class="value" id="supply_tank_weight">--</div></div>
+                <div class="card"><div class="label">Rocket Weight</div><div class="value" id="rocket_tank_weight">--</div></div>
+                
+                <div class="card"><div class="label">Amb. Pres</div><div class="value" id="pressure">--</div></div>
+                <div class="card"><div class="label">Amb. Temp</div><div class="value" id="temperature">--</div></div>
+                
+                <div class="card"><div class="label">Ox-Tank Pres</div><div class="value" id="ox_tank_pres">--</div></div>
+                <div class="card"><div class="label">CO2 Pres</div><div class="value" id="co2_pres">--</div></div>
+                <div class="card"><div class="label">AV1 Battery</div><div class="value" id="av1_battery">--</div></div>
+                <div class="card"><div class="label">AV2 Battery</div><div class="value" id="av2_battery">--</div></div>
 
                 <div class="card"><div class="label">N₂O Valve</div><div class="value" id="n2o_valve">--</div></div>
                 <div class="card"><div class="label">N₂ Valve</div><div class="value" id="n2_valve">--</div></div>
-                <div class="card"><div class="label">Relief</div><div class="value" id="relief_valve">--</div></div>
+                <div class="card"><div class="label">Poppet</div><div class="value" id="poppet_valve">--</div></div>
                 <div class="card"><div class="label">QD</div><div class="value" id="quick_disconnect">--</div></div>
                 <div class="card"><div class="label">Clamshell</div><div class="value" id="clamshell">--</div></div>
-
-                <div class="card"><div class="label">Pressure</div><div class="value" id="pressure">--</div></div>
-                <div class="card"><div class="label">Temperature</div><div class="value" id="temperature">--</div></div>
-                <div class="card"><div class="label">AV1 Battery</div><div class="value" id="av1_battery">--</div></div>
-                <div class="card"><div class="label">AV2 Battery</div><div class="value" id="av2_battery">--</div></div>
-                <div class="card"><div class="label">GSE Battery</div><div class="value" id="gse_battery">--</div></div>
+                <div class="card"><div class="label">AC Unit</div><div class="value" id="AC">--</div></div>
 
                 <div class="card"><div class="label">GSE RSSI</div><div class="value" id="gse_rssi">--</div></div>
                 <div class="card"><div class="label">AV1 RSSI</div><div class="value" id="av1_rssi">--</div></div>
@@ -188,6 +193,9 @@
                 <div class="card"><div class="label">GSE ACK</div><div class="value" id="gse_ack">--</div></div>
                 <div class="card"><div class="label">AV1 ACK</div><div class="value" id="av1_ack">--</div></div>
                 <div class="card"><div class="label">AV2 ACK</div><div class="value" id="av2_ack">--</div></div>
+
+                <div class="card"><div class="label">Passive Valve</div><div class="value" id="passive_valve">--</div></div>
+                <div class="card"><div class="label">Dump Valve</div><div class="value" id="dump_valve">--</div></div>
 
             </div>
         </div>
@@ -204,10 +212,11 @@
     <div class="log" id="telemetryLog"></div>
 </div>
 
-<script src="http://127.0.0.1:3000/socket.io/socket.io.js"
+<script src="/socket.io"
         crossorigin="anonymous"></script>
 
 <script>
+
 const socket = io({
     transports: ["websocket"],
     upgrade: false
@@ -221,7 +230,7 @@ let pressureData = [];
 let temperatureData = [];
 let batteryData = [];
 
-const flightStates = ["Liftoff", "Burnout", "Apogee", "Drogue", "Main", "Landed"];
+const flightStates = ["Pad", "Liftoff", "Burnout", "Apogee", "Drogue", "Main", "Landed"];
 let flightIndex = 0;
 
 function nextFlightState() {
@@ -314,29 +323,37 @@ async function updateTelemetry() {
 
         document.getElementById("supply_tank_temp").innerText = data[8].toFixed(2) + " °C";
         document.getElementById("rocket_tank_temp").innerText = data[9].toFixed(2) + " °C";
-        document.getElementById("n20_line_pressure").innerText = data[10].toFixed(2) + " bar";
-        document.getElementById("n2_line_pressure").innerText = data[11].toFixed(2) + " bar";
-        document.getElementById("load_cell_reading").innerText = data[12].toFixed(2) + " lb";
+        document.getElementById("n20_line_pressure").innerText = data[10].toFixed(2) + " psi";
+        document.getElementById("n2_line_pressure").innerText = data[11].toFixed(2) + " psi";
+        document.getElementById("supply_tank_weight").innerText = data[12].toFixed(2) + " lb";
+        document.getElementById("rocket_tank_weight").innerText = data[13].toFixed(2) + " lb";
 
-        setState("n2o_valve", 0, "Open", "Closed");
-        setState("n2_valve", 0, "Open", "Closed");
-        setState("relief_valve", 0, "Open", "Closed");
-        setState("quick_disconnect", 0, "Engaged", "Disengaged");
-        setState("clamshell", 0, "Open", "Closed");
+        document.getElementById("temperature").innerText = data[14].toFixed(2) + " °C";
+        document.getElementById("pressure").innerText = data[15].toFixed(2) + " psi";
+        
+        document.getElementById("ox_tank_pres").innerText = data[16].toFixed(2) + " °C";
+        document.getElementById("co2_pres").innerText = data[17].toFixed(2) + " psi";
 
-        document.getElementById("temperature").innerText = data[13].toFixed(2) + " °C";
-        document.getElementById("pressure").innerText = data[14].toFixed(2) + " bar";
-        document.getElementById("av1_battery").innerText = data[15].toFixed(2) + " V";
-        document.getElementById("av2_battery").innerText = data[16].toFixed(2) + " V";
-        document.getElementById("gse_battery").innerText = data[17].toFixed(2) + " V";
+        document.getElementById("av1_battery").innerText = data[18].toFixed(2) + " V";
+        document.getElementById("av2_battery").innerText = data[19].toFixed(2) + " V";
 
-        document.getElementById("gse_rssi").innerText = data[18].toFixed(2) + " dB";
-        document.getElementById("av1_rssi").innerText = data[19].toFixed(2) + " dB";
-        document.getElementById("av2_rssi").innerText = data[20].toFixed(2) + " dB";
+        setState("n2o_valve", (data[20] == 1), "Open", "Closed");
+        setState("n2_valve", (data[21] == 1), "Open", "Closed");
+        setState("poppet_valve", (data[22] == 1), "Open", "Closed");
+        setState("quick_disconnect", (data[23] == 1), "Engaged", "Disengaged");
+        setState("clamshell", (data[24] == 1), "Open", "Closed");
+        setState("AC", (data[25] == 1), "On", "Off");
 
-        setAck("gse_ack", data[21] > 0);
-        setAck("av1_ack", data[22] > 0);
-        setAck("av2_ack", data[23] > 0);
+        document.getElementById("gse_rssi").innerText = data[26].toFixed(2) + " dB";
+        document.getElementById("av1_rssi").innerText = data[27].toFixed(2) + " dB";
+        document.getElementById("av2_rssi").innerText = data[28].toFixed(2) + " dB";
+
+        setAck("gse_ack", data[29] > 0);
+        setAck("av1_ack", data[30] > 0);
+        setAck("av2_ack", data[31] > 0);
+        
+        setState("passive_valve", (data[32] == 1), "Open", "Closed");
+        setState("dump_valve", (data[33] == 1), "Open", "Closed");
 
         const log = document.getElementById("telemetryLog");
         log.innerHTML +=

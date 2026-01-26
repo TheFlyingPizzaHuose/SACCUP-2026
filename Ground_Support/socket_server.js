@@ -16,6 +16,7 @@ const server = http.createServer((req, res) => {
     });
 
     fs.createReadStream(filePath).pipe(res);
+    console.log("Requested Chart.js");
     return;
   }
 
@@ -25,10 +26,10 @@ const server = http.createServer((req, res) => {
 
 const io = new Server(server, {
   cors: { 
-    origin: "http://127.0.0.1:4000" ,
+    origin: "*", // wildcard for dev; specify IP in production
     methods: ["GET", "POST"],
     credentials: false,
   },
 });
 
-server.listen(3000);
+server.listen(3000, "0.0.0.0");
