@@ -49,24 +49,17 @@ body {
   text-align: center;
   padding-top: 10px;
 }
-.tank.n2 {
-  border-color: #0000ff;
-}
-.tank.n2o { border-color: #f1512d;
-}
-.tank.ox {
-  border-color: #00ff66;
-}
-.tank.comb {
-  border-color: #ff8800;
-}
+.tank.n2 { border-color: #0000ff; }
+.tank.n2o { border-color: #f1512d; }
+.tank.ox { border-color: #00ff66; }
+.tank.comb { border-color: #ff8800; }
 
 /* Pipes */
 .pipe-h {
   width: 60px;
   height: 4px;
   background: #333;
-  margin: auto;s
+  margin: auto;
 }
 .pipe-v {
   width: 4px;
@@ -85,18 +78,13 @@ body {
   text-align: center;
   width: 50px;
 }
-.valve-icon {
+
+.valve-icon img {
   width: 36px;
   height: 36px;
-  border-radius: 50%;
-  background: #880000;
-  margin: auto;
   cursor: pointer;
 }
-.valve-icon.open {
-  background: #00aa44;
-  box-shadow: 0 0 12px #00ff66;
-}
+
 .status {
   font-size: 12px;
 }
@@ -120,13 +108,17 @@ body {
         <div class="tank n2o">N2O</div>
         <div class="pipe-h" id="pN2O1"></div>
         <div class="valve">
-          <div id="vN2OV" class="valve-icon"></div>
+          <div id="vN2OV" class="valve-icon">
+            <img src="/assets/valves/closed_valve.png" alt="N2OV">
+          </div>
           <div class="status" id="sN2OV">CLOSED</div>
           N2OV
         </div>
         <div class="pipe-h" id="pN2O2"></div>
         <div class="valve">
-          <div id="vSOL1" class="valve-icon"></div>
+          <div id="vSOL1" class="valve-icon">
+            <img src="/assets/valves/solenoid_closed.svg" alt="SOL1">
+          </div>
           <div class="status" id="sSOL1">CLOSED</div>
           SOL1
         </div>
@@ -134,11 +126,13 @@ body {
       </div>
 
       <!-- LOWER BRANCH -->
-      <div class="lower row" style="position: absolute; top: 160px; left: 10;">
+      <div class="lower row" style="position: absolute; top: 160px; left: 10px;">
         <div class="tank n2">N2</div>
         <div class="pipe-h" id="pN2" style="width: 100px;"></div>
         <div class="valve">
-          <div id="vN2V" class="valve-icon"></div>
+          <div id="vN2V" class="valve-icon">
+            <img src="/assets/valves/manual_closed.svg" alt="N2V">
+          </div>
           <div class="status" id="sN2V">CLOSED</div>
           N2V
         </div>
@@ -152,7 +146,9 @@ body {
     <!-- CENTER UPPER (QD) -->
     <div class="center-upper">
       <div class="valve">
-        <div id="vQD" class="valve-icon"></div>
+        <div id="vQD" class="valve-icon">
+          <img src="/assets/valves/qd_disengaged.svg" alt="QD">
+        </div>
         <div class="status" id="sQD">DISENGAGED</div>
         QD
       </div>
@@ -162,7 +158,9 @@ body {
     <div class="right row">
       <div class="pipe-h" id="pOX"></div>
       <div class="valve">
-        <div id="vSOL2" class="valve-icon"></div>
+        <div id="vSOL2" class="valve-icon">
+          <img src="/assets/valves/solenoid_closed.svg" alt="SOL2">
+        </div>
         <div class="status" id="sSOL2">CLOSED</div>
         SOL2
       </div>
@@ -175,7 +173,9 @@ body {
   <div class="lower-col col">
     <div class="pipe-v" id="pDown" style="height: 90px;"></div>
     <div class="valve">
-      <div id="vMEV" class="valve-icon"></div>
+      <div id="vMEV" class="valve-icon">
+        <img src="/assets/valves/manual_closed.svg" alt="MEV">
+      </div>
       <div class="status" id="sMEV">CLOSED</div>
       MEV
     </div>
@@ -195,12 +195,35 @@ let valves = {
   MEV: false
 };
 
+const images = {
+  manual: {
+    open: "/assets/valves/manual_open.svg",
+    closed: "/assets/valves/manual_closed.svg"
+  },
+  solenoid: {
+    open: "/assets/valves/solenoid_open.svg",
+    closed: "/assets/valves/solenoid_closed.svg"
+  },
+  qd: {
+    open: "/assets/valves/qd_engaged.svg",
+    closed: "/assets/valves/qd_disengaged.svg"
+  }
+};
+
 function update() {
   for (let k in valves) {
-    document.getElementById("v"+k).classList.toggle("open", valves[k]);
-    let openText = (k === 'QD') ? 'ENGAGED' : 'OPEN';
-    let closedText = (k === 'QD') ? 'DISENGAGED' : 'CLOSED';
-    document.getElementById("s"+k).textContent = valves[k] ? openText : closedText;
+    const iconDiv = document.getElementById("v" + k);
+    const img = iconDiv.querySelector("img");
+
+    let type = "manual";
+    if (k.startsWith("SOL")) type = "solenoid";
+    if (k === "QD") type = "qd";
+
+    img.src = valves[k] ? images[type].open : images[type].closed;
+
+    const openText = (k === 'QD') ? 'ENGAGED' : 'OPEN';
+    const closedText = (k === 'QD') ? 'DISENGAGED' : 'CLOSED';
+    document.getElementById("s" + k).textContent = valves[k] ? openText : closedText;
   }
 
   let headerOpen = (valves.N2OV && valves.SOL1) || valves.N2V;
@@ -220,7 +243,7 @@ function update() {
 }
 
 Object.keys(valves).forEach(k => {
-  document.getElementById("v"+k).onclick = () => {
+  document.getElementById("v" + k).onclick = () => {
     valves[k] = !valves[k];
     update();
   };
