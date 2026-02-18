@@ -331,7 +331,7 @@ async function updateTelemetry() {
         document.getElementById("temperature").innerText = data[14].toFixed(2) + " °C";
         document.getElementById("pressure").innerText = data[15].toFixed(2) + " psi";
         
-        document.getElementById("ox_tank_pres").innerText = data[16].toFixed(2) + " °C";
+        document.getElementById("ox_tank_pres").innerText = data[16].toFixed(2) + " psi";
         document.getElementById("co2_pres").innerText = data[17].toFixed(2) + " psi";
 
         document.getElementById("av1_battery").innerText = data[18].toFixed(2) + " V";
@@ -356,12 +356,12 @@ async function updateTelemetry() {
         setState("dump_valve", (data[33] == 1), "Open", "Closed");
 
         const log = document.getElementById("telemetryLog");
-        log.innerHTML +=
+        /*log.innerHTML +=
             `[${data[0].toFixed(3)}] `
             + `P=${data[15].toFixed(2)} `
             + `T=${data[14].toFixed(2)} `
             + `Alt=${data[16].toFixed(2)} `
-            + `Bat=${data[17].toFixed(2)}<br>`;
+            + `Bat=${data[17].toFixed(2)}<br>`;*/
         log.scrollTop = log.scrollHeight;
 
         labels.push(data[0]);
