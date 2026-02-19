@@ -11,6 +11,9 @@ import struct
 import serial.tools.list_ports
 import math
 
+send_command = False
+command_to_be_sent = "0"
+
 stop_event = threading.Event()
 
 start_time = time.time()
@@ -37,6 +40,7 @@ else:
     log_file = "0.txt"
 
 TARGET_KEYWORD = "1A86"   # or use VID like "16C0"
+#TARGET_KEYWORD = "16C0"   # or use VID like "16C0"
 BAUD = 115200
 def serial_thread():
     global data
@@ -74,7 +78,6 @@ def serial_thread():
                         for s in line
                         if len(s) == 4
                     ]
-                    
                     with open(path + "/" + log_file, "ab") as f:
                         for i in data:
                             f.write(f"{i},".encode('ascii'))
@@ -88,6 +91,7 @@ def serial_thread():
                 print("Teensy disconnected")
                 ser.close()
                 ser = None
+
 
 @app.route("/")
 def index():
@@ -104,8 +108,17 @@ def redirect_socket():
     local_ip = get_local_ip()
     return redirect(f"http://{local_ip}:3000/socket.io/socket.io.js")
 
+@app.route("/cmd", methods=['POST'])
 
-i = 0;
+def handle_command(cmd):
+    print("COMMAND RECEIVED:", cmd)
+    gse_send(cmd)
+    return ""
+if send_command:
+        ser.write(command_to_be_sent)
+        send_command = True
+        
+i = 0
 def get_local_ip():
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     try:
@@ -171,6 +184,7 @@ def telemetry():
                          data[31],  #32: Passive Vent Valve State
                          data[32],  #33: Dump Vent Valve
                          ]
+            #print(data)
             binary_data = struct.pack(str(len(temp_data))+"f", *temp_data)
             #print("send data")
             # Emit as binary payload
