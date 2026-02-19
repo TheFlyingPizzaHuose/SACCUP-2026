@@ -13,6 +13,11 @@
         color: #e6e6e6;
         font-family: Arial, sans-serif;
     }
+    /* HIDE TELEMETRY WATERFALL */
+.log {
+    display: none;
+}
+
     .page {
         height: 100vh;
         display: grid;
@@ -130,7 +135,59 @@
         font-size: clamp(10px, 0.8vw, 12px);
         cursor: pointer;
     }
-    .mini-btn:hover {
+
+    /* COMMAND PANEL */
+.command-panel {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background: #05070d;
+    border-top: 2px solid #1f2937;
+    padding: 8px 10px 12px 10px;
+    z-index: 999;
+}
+
+.cmd-title {
+    font-size: 14px;
+    font-weight: bold;
+    color: #9ca3af;
+    margin-bottom: 6px;
+    letter-spacing: 0.08em;
+}
+
+.cmd-grid {
+    display: grid;
+    grid-template-columns: repeat(11, 1fr);
+    gap: 6px;
+}
+
+.cmd-grid button {
+    background: #111827;
+    color: #e5e7eb;
+    border: 1px solid #374151;
+    border-radius: 4px;
+    padding: 6px 4px;
+    font-size: 11px;
+    cursor: pointer;
+    transition: 0.15s;
+}
+
+.cmd-grid button:hover {
+    background: #1f2937;
+    border-color: #60a5fa;
+}
+
+.cmd-grid button:active {
+    background: #2563eb;
+    color: white;
+}
+
+.cmd-pending { background:#b45309 !important; }
+.cmd-sent    { background:#15803d !important; }
+.cmd-fail    { background:#b91c1c !important; }
+
+.mini-btn:hover {
         background: #111b30;
     }
     </style>
@@ -199,13 +256,68 @@
 
             </div>
         </div>
+        <!-- ================= COMMAND PANEL ================= -->
+<div class="command-panel" id="commandPanel">
 
+    <div class="cmd-title">GSE COMMAND PANEL</div>
+
+    <div style="display:flex; gap:6px; margin-bottom:8px;">
+    <input id="manualCmd"
+           placeholder="Enter command (ex: 1, A, 7)"
+           style="flex:1; background:#111827; border:1px solid #374151; color:white; padding:6px; border-radius:4px;">
+    <button id="sendManual"
+            style="background:#2563eb; border:none; padding:6px 12px; border-radius:4px; color:white; cursor:pointer;">
+        Send Command
+    </button>
+
+</div>
+    <div class="cmd-grid">
+
+        <button data-cmd="1">Ignition Abort</button>
+        <button data-cmd="2">Launch Arm</button>
+        <button data-cmd="3">Ignition Sequence Start</button>
+
+        <button data-cmd="4">N2O Fill Valve Open</button>
+        <button data-cmd="5">N2O Fill Valve Closed</button>
+
+        <button data-cmd="6">N2 Fill Valve Open</button>
+        <button data-cmd="7">N2 Fill Valve Closed</button>
+
+        <button data-cmd="8">Relief Valve Open</button>
+        <button data-cmd="9">Relief Valve Closed</button>
+
+        <button data-cmd="A">Disconnect Rocket Fill Line</button>
+        <button data-cmd="B">Open Cooling Clamshell</button>
+
+        <button data-cmd="C">Enable TX</button>
+        <button data-cmd="D">Disable TX</button>
+
+        <button data-cmd="E">Tare Supply Tank Load Cell</button>
+        <button data-cmd="F">Tare Rocket Tank Load Cell</button>
+
+        <button data-cmd="G">AV1 Inertial Align</button>
+        <button data-cmd="H">AV2 Inertial Align</button>
+
+        <button data-cmd="I">Set GSE Radio Frequency</button>
+        <button data-cmd="J">Set AV1 Radio Frequency</button>
+        <button data-cmd="K">Set AV2 Radio Frequency</button>
+
+        <button data-cmd="L">Load Cell Channel A</button>
+        <button data-cmd="M">Load Cell Channel B</button>
+
+    </div>
+
+</div>
         <!-- CHARTS -->
         <div class="charts">
-            <div class="chart-container"><canvas id="altitudeChart"></canvas></div>
+         <!--<div class="chart-container"><canvas id="altitudeChart"></canvas></div>
             <div class="chart-container"><canvas id="pressureChart"></canvas></div>
             <div class="chart-container"><canvas id="temperatureChart"></canvas></div>
-            <div class="chart-container"><canvas id="batteryChart"></canvas></div>
+            <div class="chart-container"><canvas id="batteryChart"></canvas></div>-->  
+            <div class="chart-container"><canvas id="n20_line_pressureChart"></canvas></div> 
+            <div class="chart-container"><canvas id="n2_line_pressureChart"></canvas></div>
+            <div class="chart-container"><canvas id="rocket_tank_weightChart"></canvas></div>
+            <div class="chart-container"><canvas id="ox_tank_presChart"></canvas></div>
         </div>
     </div>
 
@@ -282,11 +394,15 @@ function createChart(canvasId, label, dataArray) {
         }
     });
 }
+const n20LinePressureChart = createChart("n20_line_pressureChart", "N₂O Line Pressure (psi)", []);
+const n2LinePressureChart = createChart("n2_line_pressureChart", "N₂ Line Pressure (psi)", []);
+const rocketTankWeightChart = createChart("rocket_tank_weightChart", "Rocket Tank Weight (lb)", []);
+const oxTankPresChart = createChart("ox_tank_presChart", "Ox Tank Pressure (psi)", []);
 
-const altitudeChart = createChart("altitudeChart", "Altitude (m)", altitudeData);
-const pressureChart = createChart("pressureChart", "Pressure (bar)", pressureData);
-const temperatureChart = createChart("temperatureChart", "Temperature (°C)", temperatureData);
-const batteryChart = createChart("batteryChart", "Battery Voltage (V)", batteryData);
+//const altitudeChart = createChart("altitudeChart", "Altitude (m)", altitudeData);
+//const pressureChart = createChart("pressureChart", "Pressure (bar)", pressureData);
+//const temperatureChart = createChart("temperatureChart", "Temperature (°C)", temperatureData);
+//const batteryChart = createChart("batteryChart", "Battery Voltage (V)", batteryData);
 
 function setState(id, isOpen, openText = "Open", closedText = "Closed") {
     const el = document.getElementById(id);
@@ -365,27 +481,81 @@ async function updateTelemetry() {
         log.scrollTop = log.scrollHeight;
 
         labels.push(data[0]);
-        altitudeData.push({ x: data[0], y: data[10] });
-        pressureData.push({ x: data[0], y: data[11] });
-        temperatureData.push({ x: data[0], y: data[14] });
-        batteryData.push({ x: data[0], y: data[17] });
+        n20LinePressureChart.data.labels.push({x: data[0], y: data[10]});
+        n2LinePressureChart.data.labels.push({x: data[0], y: data[11]});
+        rocketTankWeightChart.data.labels.push({x: data[0], y: data[12]});
+        oxTankPresChart.data.labels.push({x: data[0], y: data[16]});
+        //altitudeData.push({ x: data[0], y: data[10] });
+        //pressureData.push({ x: data[0], y: data[11] });
+        //temperatureData.push({ x: data[0], y: data[14] });
+        //batteryData.push({ x: data[0], y: data[17] });
 
         if (labels.length > MAX_POINTS) {
             labels.shift();
-            altitudeData.shift();
-            pressureData.shift();
-            temperatureData.shift();
-            batteryData.shift();
+            
+            n20LinePressureChart.data.labels.shift();
+            n2LinePressureChart.data.labels.shift();
+            rocketTankWeightChart.data.labels.shift();
+            oxTankPresChart.data.labels.shift();
+            //altitudeData.shift();
+            //pressureData.shift();
+            //temperatureData.shift();
+            //batteryData.shift();
         }
-
-        altitudeChart.update();
-        pressureChart.update();
-        temperatureChart.update();
-        batteryChart.update();
-
+        n20LinePressureChart.update();
+        n2LinePressureChart.update();
+        rocketTankWeightChart.update();
+        oxTankPresChart.update();
+        //altitudeChart.update();
+        //pressureChart.update();
+        //temperatureChart.update();
+        //batteryChart.update();
         new_data = false;
     }
 }
+/* ================= COMMAND TRANSMISSION ================= */
+async function sendCommand(cmd) {
+    try {
+        const res = await fetch(`/${cmd}`, {
+            method: "POST"
+        });
+
+        if (!res.ok)
+            throw new Error("Server rejected command");
+
+        console.log("CMD SENT:", cmd);
+    } catch (err) {
+        console.error("CMD FAILED:", err);
+    }
+}
+/* bind buttons */
+document.querySelectorAll("#commandPanel button").forEach(btn => {
+    btn.addEventListener("click", async () => {
+
+        btn.classList.add("cmd-pending");
+
+        const ok = await sendCommand(btn.dataset.cmd);
+
+        btn.classList.remove("cmd-pending");
+        btn.classList.add(ok ? "cmd-sent" : "cmd-fail");
+
+        setTimeout(() => {
+            btn.classList.remove("cmd-sent", "cmd-fail");
+        }, 1500);
+    });
+});
+
+document.getElementById("sendManual").addEventListener("click", () => {
+    const cmd = document.getElementById("manualCmd").value.trim();
+    if (!cmd) return;
+    sendCommand(cmd);
+});
+
+document.getElementById("manualCmd").addEventListener("keypress", (e) => {
+    if (e.key === "Enter") {
+        document.getElementById("sendManual").click();
+    }
+});
 
 setInterval(updateTelemetry, 5);
 </script>
