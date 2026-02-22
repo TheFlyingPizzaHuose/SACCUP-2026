@@ -484,10 +484,10 @@ async function updateTelemetry() {
         log.scrollTop = log.scrollHeight;
 
         labels.push(data[0]);
-        n20_line_pressureChart.data.labels.push({x: data[0], y: data[10]});
-        n2_line_pressureChart.data.labels.push({x: data[0], y: data[11]});
-        rocket_tank_weightChart.data.labels.push({x: data[0], y: data[13]});
-        ox_tank_presChart.data.labels.push({x: data[0], y: data[17]});
+        n20_line_pressureChart.data.datasets[0].push({x: data[0], y: data[10]});
+        n2_line_pressureChart.data.datasets[0].push({x: data[0], y: data[11]});
+        rocket_tank_weightChart.data.datasets[0].push({x: data[0], y: data[13]});
+        ox_tank_presChart.data.datasets[0].push({x: data[0], y: data[17]});
         //altitudeData.push({ x: data[0], y: data[10] });
         //pressureData.push({ x: data[0], y: data[11] });
         //temperatureData.push({ x: data[0], y: data[14] });
@@ -496,10 +496,10 @@ async function updateTelemetry() {
         if (labels.length > MAX_POINTS) {
             labels.shift();
             
-            n20_line_pressureChart.data.labels.shift();
-            n2_line_pressureChart.data.labels.shift();
-            rocket_tank_weightChart.data.labels.shift();
-            ox_tank_presChart.data.labels.shift();
+            n20_line_pressureChart.data.datasets[0].shift();
+            n2_line_pressureChart.data.datasets[0].shift();
+            rocket_tank_weightChart.data.datasets[0].shift();
+            ox_tank_presChart.data.datasets[0].shift();
             //altitudeData.shift();
             //pressureData.shift();
             //temperatureData.shift();
