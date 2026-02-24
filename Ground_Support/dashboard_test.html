@@ -13,6 +13,11 @@
         color: #e6e6e6;
         font-family: Arial, sans-serif;
     }
+    /* HIDE TELEMETRY WATERFALL */
+.log {
+    display: none;
+}
+
     .page {
         height: 100vh;
         display: grid;
@@ -130,7 +135,59 @@
         font-size: clamp(10px, 0.8vw, 12px);
         cursor: pointer;
     }
-    .mini-btn:hover {
+
+    /* COMMAND PANEL */
+.command-panel {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background: #05070d;
+    border-top: 2px solid #1f2937;
+    padding: 8px 10px 12px 10px;
+    z-index: 999;
+}
+
+.cmd-title {
+    font-size: 14px;
+    font-weight: bold;
+    color: #9ca3af;
+    margin-bottom: 6px;
+    letter-spacing: 0.08em;
+}
+
+.cmd-grid {
+    display: grid;
+    grid-template-columns: repeat(11, 1fr);
+    gap: 6px;
+}
+
+.cmd-grid button {
+    background: #111827;
+    color: #e5e7eb;
+    border: 1px solid #374151;
+    border-radius: 4px;
+    padding: 6px 4px;
+    font-size: 11px;
+    cursor: pointer;
+    transition: 0.15s;
+}
+
+.cmd-grid button:hover {
+    background: #1f2937;
+    border-color: #60a5fa;
+}
+
+.cmd-grid button:active {
+    background: #2563eb;
+    color: white;
+}
+
+.cmd-pending { background:#b45309 !important; }
+.cmd-sent    { background:#15803d !important; }
+.cmd-fail    { background:#b91c1c !important; }
+
+.mini-btn:hover {
         background: #111b30;
     }
     </style>
@@ -170,6 +227,8 @@
 
                 <div class="card"><div class="label">Supply Weight</div><div class="value" id="supply_tank_weight">--</div></div>
                 <div class="card"><div class="label">Rocket Weight</div><div class="value" id="rocket_tank_weight">--</div></div>
+
+                <div class="card"><div class="label">Command Count</div><div class="value" id="command_count">--</div></div>
                 
                 <div class="card"><div class="label">Amb. Pres</div><div class="value" id="pressure">--</div></div>
                 <div class="card"><div class="label">Amb. Temp</div><div class="value" id="temperature">--</div></div>
@@ -199,13 +258,68 @@
 
             </div>
         </div>
+        <!-- ================= COMMAND PANEL ================= -->
+<div class="command-panel" id="commandPanel">
 
+    <div class="cmd-title">GSE COMMAND PANEL</div>
+
+    <div style="display:flex; gap:6px; margin-bottom:8px;">
+    <input id="manualCmd"
+           placeholder="Enter command (ex: 1, A, 7)"
+           style="flex:1; background:#111827; border:1px solid #374151; color:white; padding:6px; border-radius:4px;">
+    <button id="sendManual"
+            style="background:#2563eb; border:none; padding:6px 12px; border-radius:4px; color:white; cursor:pointer;">
+        Send Command
+    </button>
+
+</div>
+    <div class="cmd-grid">
+
+        <button data-cmd="1">Ignition Abort</button>
+        <button data-cmd="2">Launch Arm</button>
+        <button data-cmd="3">Ignition Sequence Start</button>
+
+        <button data-cmd="4">N2O Fill Valve Open</button>
+        <button data-cmd="5">N2O Fill Valve Closed</button>
+
+        <button data-cmd="6">N2 Fill Valve Open</button>
+        <button data-cmd="7">N2 Fill Valve Closed</button>
+
+        <button data-cmd="8">Relief Valve Open</button>
+        <button data-cmd="9">Relief Valve Closed</button>
+
+        <button data-cmd="A">Disconnect Rocket Fill Line</button>
+        <button data-cmd="B">Open Cooling Clamshell</button>
+
+        <button data-cmd="C">Enable TX</button>
+        <button data-cmd="D">Disable TX</button>
+
+        <button data-cmd="E">Tare Supply Tank Load Cell</button>
+        <button data-cmd="F">Tare Rocket Tank Load Cell</button>
+
+        <button data-cmd="G">AV1 Inertial Align</button>
+        <button data-cmd="H">AV2 Inertial Align</button>
+
+        <button data-cmd="I">Set GSE Radio Frequency</button>
+        <button data-cmd="J">Set AV1 Radio Frequency</button>
+        <button data-cmd="K">Set AV2 Radio Frequency</button>
+
+        <button data-cmd="L">Load Cell Channel A</button>
+        <button data-cmd="M">Load Cell Channel B</button>
+
+    </div>
+
+</div>
         <!-- CHARTS -->
         <div class="charts">
-            <div class="chart-container"><canvas id="altitudeChart"></canvas></div>
+         <!--<div class="chart-container"><canvas id="altitudeChart"></canvas></div>
             <div class="chart-container"><canvas id="pressureChart"></canvas></div>
             <div class="chart-container"><canvas id="temperatureChart"></canvas></div>
-            <div class="chart-container"><canvas id="batteryChart"></canvas></div>
+            <div class="chart-container"><canvas id="batteryChart"></canvas></div>-->  
+            <div class="chart-container"><canvas id="n20_line_pressureChart"></canvas></div> 
+            <div class="chart-container"><canvas id="n2_line_pressureChart"></canvas></div>
+            <div class="chart-container"><canvas id="rocket_tank_weightChart"></canvas></div>
+            <div class="chart-container"><canvas id="ox_tank_presChart"></canvas></div>
         </div>
     </div>
 
@@ -282,11 +396,15 @@ function createChart(canvasId, label, dataArray) {
         }
     });
 }
+const n20_line_pressureChart = createChart("n20_line_pressureChart", "N₂O Line Pressure (psi)", []);
+const n2_line_pressureChart = createChart("n2_line_pressureChart", "N₂ Line Pressure (psi)", []);
+const rocket_tank_weightChart = createChart("rocket_tank_weightChart", "Rocket Tank Weight (lb)", []);
+const ox_tank_presChart = createChart("ox_tank_presChart", "Ox Tank Pressure (psi)", []);
 
-const altitudeChart = createChart("altitudeChart", "Altitude (m)", altitudeData);
-const pressureChart = createChart("pressureChart", "Pressure (bar)", pressureData);
-const temperatureChart = createChart("temperatureChart", "Temperature (°C)", temperatureData);
-const batteryChart = createChart("batteryChart", "Battery Voltage (V)", batteryData);
+//const altitudeChart = createChart("altitudeChart", "Altitude (m)", altitudeData);
+//const pressureChart = createChart("pressureChart", "Pressure (bar)", pressureData);
+//const temperatureChart = createChart("temperatureChart", "Temperature (°C)", temperatureData);
+//const batteryChart = createChart("batteryChart", "Battery Voltage (V)", batteryData);
 
 function setState(id, isOpen, openText = "Open", closedText = "Closed") {
     const el = document.getElementById(id);
@@ -327,65 +445,120 @@ async function updateTelemetry() {
         document.getElementById("n2_line_pressure").innerText = data[11].toFixed(2) + " psi";
         document.getElementById("supply_tank_weight").innerText = data[12].toFixed(2) + " lb";
         document.getElementById("rocket_tank_weight").innerText = data[13].toFixed(2) + " lb";
+        document.getElementById("command_count").innerText = data[14].toFixed(2) + " lb";
 
-        document.getElementById("temperature").innerText = data[14].toFixed(2) + " °C";
-        document.getElementById("pressure").innerText = data[15].toFixed(2) + " psi";
+        document.getElementById("temperature").innerText = data[15].toFixed(2) + " °C";
+        document.getElementById("pressure").innerText = data[16].toFixed(2) + " psi";
         
-        document.getElementById("ox_tank_pres").innerText = data[16].toFixed(2) + " °C";
-        document.getElementById("co2_pres").innerText = data[17].toFixed(2) + " psi";
+        document.getElementById("ox_tank_pres").innerText = data[17].toFixed(2) + " psi";
+        document.getElementById("co2_pres").innerText = data[18].toFixed(2) + " psi";
 
-        document.getElementById("av1_battery").innerText = data[18].toFixed(2) + " V";
-        document.getElementById("av2_battery").innerText = data[19].toFixed(2) + " V";
+        document.getElementById("av1_battery").innerText = data[19].toFixed(2) + " V";
+        document.getElementById("av2_battery").innerText = data[20].toFixed(2) + " V";
 
-        setState("n2o_valve", (data[20] == 1), "Open", "Closed");
-        setState("n2_valve", (data[21] == 1), "Open", "Closed");
-        setState("poppet_valve", (data[22] == 1), "Open", "Closed");
-        setState("quick_disconnect", (data[23] == 1), "Engaged", "Disengaged");
-        setState("clamshell", (data[24] == 1), "Open", "Closed");
-        setState("AC", (data[25] == 1), "On", "Off");
+        setState("n2o_valve", (data[21] == 1), "Open", "Closed");
+        setState("n2_valve", (data[22] == 1), "Open", "Closed");
+        setState("poppet_valve", (data[23] == 1), "Open", "Closed");
+        setState("quick_disconnect", (data[24] == 1), "Engaged", "Disengaged");
+        setState("clamshell", (data[25] == 1), "Open", "Closed");
+        setState("AC", (data[26] == 1), "On", "Off");
 
-        document.getElementById("gse_rssi").innerText = data[26].toFixed(2) + " dB";
-        document.getElementById("av1_rssi").innerText = data[27].toFixed(2) + " dB";
-        document.getElementById("av2_rssi").innerText = data[28].toFixed(2) + " dB";
+        document.getElementById("gse_rssi").innerText = data[27].toFixed(2) + " dB";
+        document.getElementById("av1_rssi").innerText = data[28].toFixed(2) + " dB";
+        document.getElementById("av2_rssi").innerText = data[29].toFixed(2) + " dB";
 
-        setAck("gse_ack", data[29] > 0);
-        setAck("av1_ack", data[30] > 0);
-        setAck("av2_ack", data[31] > 0);
+        setAck("gse_ack", data[30] > 0);
+        setAck("av1_ack", data[31] > 0);
+        setAck("av2_ack", data[32] > 0);
         
-        setState("passive_valve", (data[32] == 1), "Open", "Closed");
-        setState("dump_valve", (data[33] == 1), "Open", "Closed");
+        setState("passive_valve", (data[33] == 1), "Open", "Closed");
+        setState("dump_valve", (data[34] == 1), "Open", "Closed");
 
         const log = document.getElementById("telemetryLog");
-        log.innerHTML +=
+        /*log.innerHTML +=
             `[${data[0].toFixed(3)}] `
             + `P=${data[15].toFixed(2)} `
             + `T=${data[14].toFixed(2)} `
             + `Alt=${data[16].toFixed(2)} `
-            + `Bat=${data[17].toFixed(2)}<br>`;
+            + `Bat=${data[17].toFixed(2)}<br>`;*/
         log.scrollTop = log.scrollHeight;
 
         labels.push(data[0]);
-        altitudeData.push({ x: data[0], y: data[10] });
-        pressureData.push({ x: data[0], y: data[11] });
-        temperatureData.push({ x: data[0], y: data[14] });
-        batteryData.push({ x: data[0], y: data[17] });
+        n20_line_pressureChart.data.datasets[0].data.push({x: data[0], y: data[10]});
+        n2_line_pressureChart.data.datasets[0].data.push({x: data[0], y: data[11]});
+        rocket_tank_weightChart.data.datasets[0].data.push({x: data[0], y: data[13]});
+        ox_tank_presChart.data.datasets[0].data.push({x: data[0], y: data[17]});
+        //altitudeData.push({ x: data[0], y: data[10] });
+        //pressureData.push({ x: data[0], y: data[11] });
+        //temperatureData.push({ x: data[0], y: data[14] });
+        //batteryData.push({ x: data[0], y: data[17] });
 
         if (labels.length > MAX_POINTS) {
             labels.shift();
-            altitudeData.shift();
-            pressureData.shift();
-            temperatureData.shift();
-            batteryData.shift();
+            
+            n20_line_pressureChart.data.datasets[0].data.shift();
+            n2_line_pressureChart.data.datasets[0].data.shift();
+            rocket_tank_weightChart.data.datasets[0].data.shift();
+            ox_tank_presChart.data.datasets[0].data.shift();
+            //altitudeData.shift();
+            //pressureData.shift();
+            //temperatureData.shift();
+            //batteryData.shift();
         }
-
-        altitudeChart.update();
-        pressureChart.update();
-        temperatureChart.update();
-        batteryChart.update();
-
+        n20_line_pressureChart.update();
+        n2_line_pressureChart.update();
+        rocket_tank_weightChart.update();
+        ox_tank_presChart.update();
+        //altitudeChart.update();
+        //pressureChart.update();
+        //temperatureChart.update();
+        //batteryChart.update();
         new_data = false;
     }
 }
+/* ================= COMMAND TRANSMISSION ================= */
+async function sendCommand(cmd) {
+    try {
+        const res = await fetch(`/${cmd}`, {
+            method: "POST"
+        });
+
+        if (!res.ok)
+            throw new Error("Server rejected command");
+
+        console.log("CMD SENT:", cmd);
+    } catch (err) {
+        console.error("CMD FAILED:", err);
+    }
+}
+/* bind buttons */
+document.querySelectorAll("#commandPanel button").forEach(btn => {
+    btn.addEventListener("click", async () => {
+
+        btn.classList.add("cmd-pending");
+
+        const ok = await sendCommand(btn.dataset.cmd);
+
+        btn.classList.remove("cmd-pending");
+        btn.classList.add(ok ? "cmd-sent" : "cmd-fail");
+
+        setTimeout(() => {
+            btn.classList.remove("cmd-sent", "cmd-fail");
+        }, 1500);
+    });
+});
+
+document.getElementById("sendManual").addEventListener("click", () => {
+    const cmd = document.getElementById("manualCmd").value.trim();
+    if (!cmd) return;
+    sendCommand(cmd);
+});
+
+document.getElementById("manualCmd").addEventListener("keypress", (e) => {
+    if (e.key === "Enter") {
+        document.getElementById("sendManual").click();
+    }
+});
 
 setInterval(updateTelemetry, 5);
 </script>
