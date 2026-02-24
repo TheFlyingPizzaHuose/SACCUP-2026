@@ -7,6 +7,7 @@ This library is designed to assist with Kalman filtering for Rocket Altitude*/
 #include <vector>
 #include <stdexcept>
 #include <iostream>
+#include <cmath>
 using namespace std;
 
 
@@ -146,4 +147,48 @@ void printMatrix(vector<vector<double>> A){
         }
         cout<<endl;
     }
+};
+
+vector<vector<double>> matrixTimesScaler(double s, vector<vector<double>> A){
+    int m = A.size();
+    int n = A[0].size();
+    vector<vector<double>> result(m, vector<double>(n,0));
+    for (int i = 0; i < m; i++){
+        for (int j = 0; j < n; j++){
+            result[i][j] = A[i][j]*s;
+        }
+    }
+    return result;
+}
+
+vector<vector<double>> crossProduct(vector<vector<double>> A, vector<vector<double>> B){
+    vector<vector<double>> result = {{A[1][0]*B[2][0]-B[1][0]*A[2][0]},
+                                     {A[2][0]*B[0][0]-B[2][0]*A[0][0]},
+                                     {A[0][0]*B[1][0]-B[0][0]*A[1][0]}};
+    return result;
+}
+
+vector<double> vector_add(vector<double> A, vector<double> B){
+    vector<double> result(A.size(),0);
+    for (int i = 0; i < A.size(); i++){
+        result[i] = A[i]+B[i];
+    }
+    return result;
+}
+
+vector<double> vectorTimesScaler(double s, vector<double> A){
+    vector<double> result(A.size(),0);
+    for (int i = 0; i < A.size(); i++){
+        result[i] = A[i]*s;
+    }
+    return result;
+}
+
+double magnitude(vector<double> V){
+    double sum = 0;
+    for (int i = 0; i < V.size(); i++){
+        sum += pow(V[i],2);
+    }
+    double mag = sqrt(sum);
+    return mag;
 }
