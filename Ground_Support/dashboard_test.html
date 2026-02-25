@@ -61,15 +61,45 @@
     }
 
     .readouts {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
+        display: flex;
+        flex-direction: column;
         gap: 0.1vh;
-        padding: 1vh;
-        border-radius: 1vh;
+        padding: 1.2vh;
+        border-radius: 0.5vh;
         background: #0f1724;
         min-height: 0;
         overflow-y: auto;
     }
+
+     /* GROUP SECTION */
+    .card-group { display: flex; flex-direction: column; gap: 0.3vh; }
+
+    .group-label {
+        font-size: clamp(8px, 0.75vw, 11px);
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        padding: 0.25vh 0.6vh;
+        border-radius: 0.4vh;
+        margin-bottom: 0.15vh;
+    }
+
+    .group-label.grp-position    { color: #60a5fa; border-left: 3px solid #60a5fa; background: #060e1e; }
+    .group-label.grp-velocity    { color: #34d399; border-left: 3px solid #34d399; background: #041710; }
+    .group-label.grp-pressure    { color: #f97316; border-left: 3px solid #f97316; background: #1a0c02; }
+    .group-label.grp-temperature { color: #fb923c; border-left: 3px solid #fb923c; background: #1a0c02; }
+    .group-label.grp-weight      { color: #a78bfa; border-left: 3px solid #a78bfa; background: #0d0820; }
+    .group-label.grp-electrical  { color: #facc15; border-left: 3px solid #facc15; background: #161002; }
+    .group-label.grp-valves      { color: #f472b6; border-left: 3px solid #f472b6; background: #180610; }
+    .group-label.grp-comms       { color: #38bdf8; border-left: 3px solid #38bdf8; background: #02101a; }
+
+    .card-row {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 0.3vh;
+        margin-bottom: 0.15vh;
+    }
+
     .card {
         background: #111827;
         border-radius: 0.5vh;
@@ -190,6 +220,59 @@
 .mini-btn:hover {
         background: #111b30;
     }
+/* SLURPL BANNER */
+    .slurpl-banner {
+        position: relative;
+        width: 100%;
+        overflow: hidden;
+        height: 28px;
+        margin-bottom: 7px;
+        background: linear-gradient(90deg, transparent, rgba(99,102,241,0.08), transparent);
+        border-radius: 4px;
+        display: flex;
+        align-items: center;
+    }
+
+    .slurpl-track {
+        display: flex;
+        align-items: center;
+        white-space: nowrap;
+        position: absolute;
+        left: 0;
+        animation: slurpl-scroll 7s linear infinite;
+        gap: 0;
+    }
+
+    .slurpl-text {
+        font-size: 15px;
+        font-weight: 900;
+        letter-spacing: 0.35em;
+        color: transparent;
+        background: linear-gradient(90deg, #f8d681, #a78bfa, #c084fc, #818cf8);
+        background-size: 200% auto;
+        -webkit-background-clip: text;
+        background-clip: text;
+        animation: slurpl-shimmer 2.5s linear infinite;
+        text-transform: uppercase;
+        padding: 0 18px;
+    }
+
+    .slurpl-rocket {
+        font-size: 17px;
+        display: inline-block;
+        /* rockets face right by default — no transform needed */
+        filter: drop-shadow(0 0 5px rgba(172, 85, 209, 0.7));
+    }
+
+    @keyframes slurpl-scroll {
+        0%   { transform: translateX(-50%); }
+        100% { transform: translateX(0%); }
+    }
+
+    @keyframes slurpl-shimmer {
+        0%   { background-position: 0% center; }
+        100% { background-position: 200% center; }
+    }
     </style>
 </head>
 
@@ -210,51 +293,105 @@
             <!-- READOUT GRID -->
             <div class="readouts" id="readoutsGrid">
 
-                <div class="card"><div class="label">Pos X</div><div class="value" id="pos_x">--</div></div>
-                <div class="card"><div class="label">Pos Y</div><div class="value" id="pos_y">--</div></div>
-                <div class="card"><div class="label">Pos Z</div><div class="value" id="pos_z">--</div></div>
+                <!-- POSITION -->
+                <div class="card-group">
+                    <div class="group-label grp-position">Position</div>
+                    <div class="card-row">
+                        <div class="card"><div class="label">Pos X</div><div class="value" id="pos_x">--</div></div>
+                        <div class="card"><div class="label">Pos Y</div><div class="value" id="pos_y">--</div></div>
+                        <div class="card"><div class="label">Pos Z</div><div class="value" id="pos_z">--</div></div>
+                    </div>
+                </div>
 
-                <div class="card"><div class="label">Vel X</div><div class="value" id="vel_x">--</div></div>
-                <div class="card"><div class="label">Vel Y</div><div class="value" id="vel_y">--</div></div>
-                <div class="card"><div class="label">Vel Z</div><div class="value" id="vel_z">--</div></div>
-                
-                <div class="card"><div class="label">Theta</div><div class="value" id="theta">--</div></div>
+                <!-- VELOCITY & ATTITUDE -->
+                <div class="card-group">
+                    <div class="group-label grp-velocity">Velocity &amp; Attitude</div>
+                    <div class="card-row">
+                        <div class="card"><div class="label">Vel X</div><div class="value" id="vel_x">--</div></div>
+                        <div class="card"><div class="label">Vel Y</div><div class="value" id="vel_y">--</div></div>
+                        <div class="card"><div class="label">Vel Z</div><div class="value" id="vel_z">--</div></div>
+                    </div>
+                    <div class="card-row">
+                        <div class="card"><div class="label">Theta</div><div class="value" id="theta">--</div></div>
+                    </div>
+                </div>
 
-                <div class="card"><div class="label">Supply Temp</div><div class="value" id="supply_tank_temp">--</div></div>
-                <div class="card"><div class="label">Rocket Temp</div><div class="value" id="rocket_tank_temp">--</div></div>
-                <div class="card"><div class="label">N20 Line Pres</div><div class="value" id="n20_line_pressure">--</div></div>
-                <div class="card"><div class="label">N2 Line Pres</div><div class="value" id="n2_line_pressure">--</div></div>
+                <!-- PRESSURES -->
+                <div class="card-group">
+                    <div class="group-label grp-pressure">Pressures</div>
+                    <div class="card-row">
+                        <div class="card"><div class="label">N2O Line Pres</div><div class="value" id="n20_line_pressure">--</div></div>
+                        <div class="card"><div class="label">N2 Line Pres</div><div class="value" id="n2_line_pressure">--</div></div>
+                        <div class="card"><div class="label">Ox-Tank Pres</div><div class="value" id="ox_tank_pres">--</div></div>
+                    </div>
+                    <div class="card-row">
+                        <div class="card"><div class="label">CO2 Pres</div><div class="value" id="co2_pres">--</div></div>
+                        <div class="card"><div class="label">Amb. Pres</div><div class="value" id="pressure">--</div></div>
+                    </div>
+                </div>
 
-                <div class="card"><div class="label">Supply Weight</div><div class="value" id="supply_tank_weight">--</div></div>
-                <div class="card"><div class="label">Rocket Weight</div><div class="value" id="rocket_tank_weight">--</div></div>
+                <!-- TEMPERATURES -->
+                <div class="card-group">
+                    <div class="group-label grp-temperature">Temperatures</div>
+                    <div class="card-row">
+                        <div class="card"><div class="label">Supply Temp</div><div class="value" id="supply_tank_temp">--</div></div>
+                        <div class="card"><div class="label">Rocket Temp</div><div class="value" id="rocket_tank_temp">--</div></div>
+                        <div class="card"><div class="label">Amb. Temp</div><div class="value" id="temperature">--</div></div>
+                    </div>
+                </div>
 
-                <div class="card"><div class="label">Command Count</div><div class="value" id="command_count">--</div></div>
-                
-                <div class="card"><div class="label">Amb. Pres</div><div class="value" id="pressure">--</div></div>
-                <div class="card"><div class="label">Amb. Temp</div><div class="value" id="temperature">--</div></div>
-                
-                <div class="card"><div class="label">Ox-Tank Pres</div><div class="value" id="ox_tank_pres">--</div></div>
-                <div class="card"><div class="label">CO2 Pres</div><div class="value" id="co2_pres">--</div></div>
-                <div class="card"><div class="label">AV1 Battery</div><div class="value" id="av1_battery">--</div></div>
-                <div class="card"><div class="label">AV2 Battery</div><div class="value" id="av2_battery">--</div></div>
+                <!-- WEIGHTS -->
+                <div class="card-group">
+                    <div class="group-label grp-weight">Tank Weights</div>
+                    <div class="card-row">
+                        <div class="card"><div class="label">Supply Weight</div><div class="value" id="supply_tank_weight">--</div></div>
+                        <div class="card"><div class="label">Rocket Weight</div><div class="value" id="rocket_tank_weight">--</div></div>
+                    </div>
+                </div>
 
-                <div class="card"><div class="label">N₂O Valve</div><div class="value" id="n2o_valve">--</div></div>
-                <div class="card"><div class="label">N₂ Valve</div><div class="value" id="n2_valve">--</div></div>
-                <div class="card"><div class="label">Poppet</div><div class="value" id="poppet_valve">--</div></div>
-                <div class="card"><div class="label">QD</div><div class="value" id="quick_disconnect">--</div></div>
-                <div class="card"><div class="label">Clamshell</div><div class="value" id="clamshell">--</div></div>
-                <div class="card"><div class="label">AC Unit</div><div class="value" id="AC">--</div></div>
+                <!-- ELECTRICAL -->
+                <div class="card-group">
+                    <div class="group-label grp-electrical">Electrical</div>
+                    <div class="card-row">
+                        <div class="card"><div class="label">AV1 Battery</div><div class="value" id="av1_battery">--</div></div>
+                        <div class="card"><div class="label">AV2 Battery</div><div class="value" id="av2_battery">--</div></div>
+                        <div class="card"><div class="label">Cmd Count</div><div class="value" id="command_count">--</div></div>
+                    </div>
+                </div>
 
-                <div class="card"><div class="label">GSE RSSI</div><div class="value" id="gse_rssi">--</div></div>
-                <div class="card"><div class="label">AV1 RSSI</div><div class="value" id="av1_rssi">--</div></div>
-                <div class="card"><div class="label">AV2 RSSI</div><div class="value" id="av2_rssi">--</div></div>
+                <!-- VALVES -->
+                <div class="card-group">
+                    <div class="group-label grp-valves">Valves</div>
+                    <div class="card-row">
+                        <div class="card"><div class="label">N₂O Valve</div><div class="value" id="n2o_valve">--</div></div>
+                        <div class="card"><div class="label">N₂ Valve</div><div class="value" id="n2_valve">--</div></div>
+                        <div class="card"><div class="label">Poppet</div><div class="value" id="poppet_valve">--</div></div>
+                    </div>
+                    <div class="card-row">
+                        <div class="card"><div class="label">QD</div><div class="value" id="quick_disconnect">--</div></div>
+                        <div class="card"><div class="label">Clamshell</div><div class="value" id="clamshell">--</div></div>
+                        <div class="card"><div class="label">AC Unit</div><div class="value" id="AC">--</div></div>
+                    </div>
+                    <div class="card-row">
+                        <div class="card"><div class="label">Passive Valve</div><div class="value" id="passive_valve">--</div></div>
+                        <div class="card"><div class="label">Dump Valve</div><div class="value" id="dump_valve">--</div></div>
+                    </div>
+                </div>
 
-                <div class="card"><div class="label">GSE ACK</div><div class="value" id="gse_ack">--</div></div>
-                <div class="card"><div class="label">AV1 ACK</div><div class="value" id="av1_ack">--</div></div>
-                <div class="card"><div class="label">AV2 ACK</div><div class="value" id="av2_ack">--</div></div>
-
-                <div class="card"><div class="label">Passive Valve</div><div class="value" id="passive_valve">--</div></div>
-                <div class="card"><div class="label">Dump Valve</div><div class="value" id="dump_valve">--</div></div>
+                <!-- COMMUNICATIONS -->
+                <div class="card-group">
+                    <div class="group-label grp-comms">Communications</div>
+                    <div class="card-row">
+                        <div class="card"><div class="label">GSE RSSI</div><div class="value" id="gse_rssi">--</div></div>
+                        <div class="card"><div class="label">AV1 RSSI</div><div class="value" id="av1_rssi">--</div></div>
+                        <div class="card"><div class="label">AV2 RSSI</div><div class="value" id="av2_rssi">--</div></div>
+                    </div>
+                    <div class="card-row">
+                        <div class="card"><div class="label">GSE ACK</div><div class="value" id="gse_ack">--</div></div>
+                        <div class="card"><div class="label">AV1 ACK</div><div class="value" id="av1_ack">--</div></div>
+                        <div class="card"><div class="label">AV2 ACK</div><div class="value" id="av2_ack">--</div></div>
+                    </div>
+                </div>
 
             </div>
         </div>
@@ -273,6 +410,14 @@
     </button>
 
 </div>
+
+ <!-- SLURPL BANNER -->
+    <div class="slurpl-banner">
+        <div class="slurpl-track" id="slurplTrack">
+            <!-- Duplicated for seamless loop — JS will size it -->
+        </div>
+    </div>
+
     <div class="cmd-grid">
 
         <button data-cmd="1">Ignition Abort</button>
@@ -330,6 +475,47 @@
         crossorigin="anonymous"></script>
 
 <script>
+
+/* ================= SLURPL BANNER SETUP ================= */
+(function() {
+    const track = document.getElementById('slurplTrack');
+    const banner = track.parentElement;
+
+    // Build one "unit": rocket + SLURPL + rocket
+    function buildUnit() {
+        const unit = document.createElement('span');
+        unit.style.display = 'inline-flex';
+        unit.style.alignItems = 'center';
+
+        const r1 = document.createElement('span');
+        r1.className = 'slurpl-rocket';
+        r1.textContent = '🚀';
+
+        const txt = document.createElement('span');
+        txt.className = 'slurpl-text';
+        txt.textContent = 'SLURPL';
+
+        const r2 = document.createElement('span');
+        r2.className = 'slurpl-rocket';
+        r2.textContent = '🚀';
+
+        unit.appendChild(r1);
+        unit.appendChild(txt);
+        unit.appendChild(r2);
+        return unit;
+    }
+    
+    const UNITS = 8;
+    const half = document.createDocumentFragment();
+    for (let i = 0; i < UNITS; i++) half.appendChild(buildUnit());
+    track.appendChild(half);
+
+    // Duplicate for seamless loop
+    track.innerHTML += track.innerHTML;
+
+    // The CSS animation runs on .slurpl-track:
+    // It scrolls from -50% to 0% continuously — works because content is doubled.
+})();
 
 const socket = io({
     transports: ["websocket"],
@@ -527,8 +713,10 @@ async function sendCommand(cmd) {
             throw new Error("Server rejected command");
 
         console.log("CMD SENT:", cmd);
+        return true;
     } catch (err) {
         console.error("CMD FAILED:", err);
+        return false;
     }
 }
 /* bind buttons */
