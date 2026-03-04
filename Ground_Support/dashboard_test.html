@@ -26,9 +26,9 @@
         padding: 1vh;
         box-sizing: border-box;
     }
-    .top {
+ .top {
         display: grid;
-        grid-template-columns: 30fr 70fr;
+        grid-template-columns: 45fr 100fr;
         gap: 1vh;
         min-height: 0;
     }
@@ -57,47 +57,50 @@
     .flightstate-banner .value {
         font-size: clamp(18px, 2.2vw, 32px);
         font-weight: 800;
-        margin: 0.5vh 0;
+        margin: 0.3vh 0;
     }
 
-    .readouts {
+     .readouts {
         display: flex;
         flex-direction: column;
-        gap: 0.1vh;
-        padding: 1.2vh;
-        border-radius: 0.5vh;
+        gap: 0;
+        padding: 0.3vh 0.5vh;
+        border-radius: 0.9vh;
         background: #0f1724;
         min-height: 0;
-        overflow-y: auto;
+        overflow-y: hidden;
+        flex: 1;
+        justify-content: space-between;
     }
 
      /* GROUP SECTION */
-    .card-group { display: flex; flex-direction: column; gap: 0.3vh; }
-
+    .card-group { display: flex; flex-direction: column; gap: 0; flex: 1; justify-content: space-between; }
+ 
     .group-label {
-        font-size: clamp(8px, 0.75vw, 11px);
+        font-size: clamp(6px, 1.0vw, 9.5px);
         font-weight: 700;
-        letter-spacing: 0.1em;
+        letter-spacing: 0.06em;
         text-transform: uppercase;
-        padding: 0.25vh 0.6vh;
-        border-radius: 0.4vh;
-        margin-bottom: 0.15vh;
+        padding: 0.1vh 0.5vh;
+        border-radius: 0.5vh;
+        margin-bottom: 0;
     }
 
-    .group-label.grp-position    { color: #60a5fa; border-left: 3px solid #60a5fa; background: #060e1e; }
-    .group-label.grp-velocity    { color: #34d399; border-left: 3px solid #34d399; background: #041710; }
-    .group-label.grp-pressure    { color: #f97316; border-left: 3px solid #f97316; background: #1a0c02; }
-    .group-label.grp-temperature { color: #fb923c; border-left: 3px solid #fb923c; background: #1a0c02; }
-    .group-label.grp-weight      { color: #a78bfa; border-left: 3px solid #a78bfa; background: #0d0820; }
-    .group-label.grp-electrical  { color: #facc15; border-left: 3px solid #facc15; background: #161002; }
-    .group-label.grp-valves      { color: #f472b6; border-left: 3px solid #f472b6; background: #180610; }
-    .group-label.grp-comms       { color: #38bdf8; border-left: 3px solid #38bdf8; background: #02101a; }
+    .group-label.grp-position    { color: #60a5fa; border-left: 9px solid #60a5fa; background: #060e1e; }
+    .group-label.grp-velocity    { color: #34d399; border-left: 9px solid #34d399; background: #041710; }
+    .group-label.grp-pressure    { color: #f97316; border-left: 9px solid #f97316; background: #1a0c02; }
+    .group-label.grp-temperature { color: #fb923c; border-left: 9px solid #fb923c; background: #1a0c02; }
+    .group-label.grp-weight      { color: #a78bfa; border-left: 9px solid #a78bfa; background: #0d0820; }
+    .group-label.grp-electrical  { color: #facc15; border-left: 9px solid #facc15; background: #161002; }
+    .group-label.grp-valves      { color: #f472b6; border-left: 9px solid #f472b6; background: #180610; }
+    .group-label.grp-comms       { color: #38bdf8; border-left: 9px solid #38bdf8; background: #02101a; }
 
     .card-row {
         display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 0.3vh;
-        margin-bottom: 0.15vh;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 7vh;
+        margin-bottom: 0;
+        flex: 1;
     }
 
     .card {
@@ -106,19 +109,18 @@
         display: flex;
         flex-direction: column;
         justify-content: center;
-        min-height: 4.5vh;
-        padding: 0.6vh;
+        padding: 0.2vh 0.5vh;
     }
     .card .label {
-        font-size: clamp(1px, 0.9vw, 12px);
+        font-size: clamp(1px, 1.5vw, 11px);
         color: #9ca3af;
-        letter-spacing: 0.04em;
+        letter-spacing: 0.02em;
         text-transform: uppercase;
     }
     .value {
         font-size: clamp(1px, 1.4vw, 20px);
         font-weight: 700;
-        line-height: 1.1;
+        line-height: 1.2;
     }
     .charts {
         display: grid;
@@ -239,7 +241,7 @@
         white-space: nowrap;
         position: absolute;
         left: 0;
-        animation: slurpl-scroll 7s linear infinite;
+        animation: slurpl-scroll 10s linear infinite;
         gap: 0;
     }
 
