@@ -44,6 +44,8 @@ TARGET_KEYWORD = "1A86"   # or use VID like "16C0"
 BAUD = 115200
 def serial_thread():
     global data
+    global send_command
+    global command_to_be_sent
     ser = None
     while True:
         # Check if serial is open
@@ -91,6 +93,9 @@ def serial_thread():
                 print("Teensy disconnected")
                 ser.close()
                 ser = None
+            if send_command:
+                    ser.write(command_to_be_sent.encode('ascii'))
+                    send_command = False
 
 
 @app.route("/")
@@ -108,16 +113,102 @@ def redirect_socket():
     local_ip = get_local_ip()
     return redirect(f"http://{local_ip}:3000/socket.io/socket.io.js")
 
-@app.route("/cmd", methods=['POST'])
-
-def handle_command(cmd):
-    print("COMMAND RECEIVED:", cmd)
-    gse_send(cmd)
+@app.route("/1", methods=['POST'])
+def cmd1():
+    cmd("1")
     return ""
-if send_command:
-        ser.write(command_to_be_sent)
-        send_command = True
-        
+@app.route("/2", methods=['POST'])
+def cmd2():
+    cmd("2")
+    return ""
+@app.route("/3", methods=['POST'])
+def cmd3():
+    cmd("3")
+    return ""
+@app.route("/4", methods=['POST'])
+def cmd4():
+    cmd("4")
+    return ""
+@app.route("/5", methods=['POST'])
+def cmd5():
+    cmd("5")
+    return ""
+@app.route("/6", methods=['POST'])
+def cmd6():
+    cmd("6")
+    return ""
+@app.route("/7", methods=['POST'])
+def cmd7():
+    cmd("7")
+    return ""   
+@app.route("/8", methods=['POST'])
+def cmd8():
+    cmd("8")
+    return ""
+@app.route("/9", methods=['POST'])
+def cmd9():
+    cmd("9")
+    return ""
+@app.route("/A", methods=['POST'])
+def cmdA():
+    cmd("A")
+    return ""
+@app.route("/B", methods=['POST'])
+def cmdB():
+    cmd("B")
+    return ""
+@app.route("/C", methods=['POST'])
+def cmdC():
+    cmd("C")
+    return ""
+@app.route("/D", methods=['POST'])
+def cmdD():
+    cmd("D")
+    return ""
+@app.route("/E", methods=['POST'])
+def cmdE():
+    cmd("E")
+    return ""
+@app.route("/F", methods=['POST'])
+def cmdF():
+    cmd("F")
+    return ""
+@app.route("/G", methods=['POST'])
+def cmdG():
+    cmd("G")
+    return ""
+@app.route("/H", methods=['POST'])
+def cmdH():
+    cmd("H")
+    return ""
+@app.route("/I", methods=['POST'])
+def cmdI():
+    cmd("I")
+    return ""
+@app.route("/J", methods=['POST'])
+def cmdJ():
+    cmd("J")
+    return ""
+@app.route("/K", methods=['POST'])
+def cmdK():
+    cmd("K")
+    return ""
+@app.route("/L", methods=['POST'])
+def cmdL():
+    cmd("L")
+    return ""
+@app.route("/M", methods=['POST'])
+def cmdM():
+    cmd("M")
+    return ""
+
+def cmd(num_string):
+    global command_to_be_sent
+    global send_command
+    send_command = True
+    command_to_be_sent = num_string
+
+
 i = 0
 def get_local_ip():
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -148,7 +239,7 @@ def telemetry():
             "altitude": round(random.uniform(0, 2500), 2),
             "battery": round(random.uniform(10.5, 12.6), 2)
         })'''
-        if len(my_data) == 33:
+        if len(my_data) == 34:
             temp_data = [(time.time()-start_time), #0: Time
                          data[0],  #1: Pos X
                          data[1],  #2: Pos Y
@@ -163,26 +254,27 @@ def telemetry():
                          data[10],  #11: N2 Pressure
                          data[11],  #12: Supply Tank Load Cell Reading
                          data[12],  #13: Rocket Tank Load Cell Reading
-                         data[13],  #14: Ambient Temp
-                         data[14],  #15: Ambient Pressure
-                         data[15],  #16: AV1 Ox-Tank Pressure
-                         data[16],  #17: AV2 CO2 Pressure
-                         data[17],  #18: AV1 Battery Voltage
-                         data[18],  #19: AV2 Battery Voltage
-                         data[19],  #20: N2O Valve State
-                         data[20],  #21: N2 Valve State
-                         data[21],  #22: Poppet Valve
-                         data[22],  #23: Quick Disconnect State
-                         data[23],  #24: Clamshell State
-                         data[24],  #25: AC Unit State
-                         data[25],  #26: GSE RSSI
-                         data[26],  #27: AV1 RSSI
-                         data[27],  #28: AV2 RSSI
-                         data[28],  #29: GSE ACK
-                         data[29],  #30: AV1 ACK
-                         data[30],  #31: AV2 ACK
-                         data[31],  #32: Passive Vent Valve State
-                         data[32],  #33: Dump Vent Valve
+                         data[13],  #14: Command count
+                         data[14],  #15: Ambient Temp
+                         data[15],  #16: Ambient Pressure
+                         data[16],  #17: AV1 Ox-Tank Pressure
+                         data[17],  #18: AV2 CO2 Pressure
+                         data[18],  #19: AV1 Battery Voltage
+                         data[19],  #20: AV2 Battery Voltage
+                         data[20],  #21: N2O Valve State
+                         data[21],  #22: N2 Valve State
+                         data[22],  #23: Poppet Valve State
+                         data[23],  #24: Quick Disconnect State
+                         data[24],  #25: Clamshell State
+                         data[25],  #26: AC Unit State
+                         data[26],  #27: GSE RSSI
+                         data[27],  #28: AV1 RSSI
+                         data[28],  #29: AV2 RSSI
+                         data[29],  #30: GSE ACK
+                         data[30],  #31: AV1 ACK
+                         data[31],  #32: AV2 ACK
+                         data[32],  #33: Passive Vent Valve State
+                         data[33],  #34: Dump Vent Valve State
                          ]
             #print(data)
             binary_data = struct.pack(str(len(temp_data))+"f", *temp_data)
