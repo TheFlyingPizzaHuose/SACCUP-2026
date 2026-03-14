@@ -2,14 +2,11 @@ import os
 import time
 import random
 import threading
-import serial
-import serial.tools.list_ports  # optional, for listing ports
-from flask import Flask, jsonify, render_template, Response, redirect
-from flask_socketio import SocketIO, emit
 import socket
 import struct
-import serial.tools.list_ports
 import math
+from flask import Flask, jsonify, render_template, Response, redirect
+from flask_socketio import SocketIO, emit
 
 send_command = False
 command_to_be_sent = "0"
@@ -38,65 +35,68 @@ if filenames: #if there are files in the folder at all
     log_file =  str(int(max(filenumbers)) + 1)+ ".txt"
 else:
     log_file = "0.txt"
+# ── UDP Configuration ─────────────────────────────────────────────────────────
+UDP_RECV_PORT    = 5005          # Port this GCS listens on for incoming telemetry
+UDP_CMD_IP       = "127.0.0.1"  # IP of the pad computer
+UDP_CMD_PORT     = 5006          # Port the pad computer listens on for commands
+UDP_BUFFER_SIZE  = 4096
 
-TARGET_KEYWORD = "1A86"   # or use VID like "16C0"
-#TARGET_KEYWORD = "16C0"   # or use VID like "16C0"
-BAUD = 115200
-def serial_thread():
-    global data
-    global send_command
-    global command_to_be_sent
-    ser = None
-    while True:
-        # Check if serial is open
-        if ser is None or not ser.is_open:
-            port = None
-            for p in serial.tools.list_ports.comports():
-                print("Available Serial Devices")
-                print(p.description);
-                print(p.hwid);
-                if TARGET_KEYWORD in p.description or TARGET_KEYWORD in p.hwid:
-                    port = p.device
-                    break
-                print("Teensy not found")
-                time.sleep(1)
-                
-            if port:
-                try:
-                    ser = serial.Serial(port, BAUD, timeout=0.1)
-                except serial.SerialException:
-                    print(f"Failed to open {port}")
-                    ser = None
+# Shared UDP command socket (created once, reused for all outgoing commands)
+cmd_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
-        # Read serial if connected
-        if ser and ser.is_open:
+
+# ── UDP Receive Thread (replaces serial_thread) ───────────────────────────────
+def udp_recv_thread():
+    global data, send_command, command_to_be_sent
+
+    recv_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    recv_sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    recv_sock.bind(("0.0.0.0", UDP_RECV_PORT))
+    recv_sock.settimeout(1.0)   # allows the loop to check stop_event periodically
+
+    print(f"UDP receive listening on port {UDP_RECV_PORT}")
+
+    while not stop_event.is_set():
+        # ── Send any queued command ───────────────────────────────────────────
+        if send_command:
             try:
-                if ser.in_waiting:
-                    raw_line = ser.readline()          # bytes, NOT str
-                    raw_line = raw_line[0:len(raw_line)-2:1]
-                    line = raw_line.split(b',')        # split using bytes
-                    data = [
-                        struct.unpack('<f', s)[0]
-                        for s in line
-                        if len(s) == 4
-                    ]
-                    with open(path + "/" + log_file, "ab") as f:
-                        for i in data:
-                            f.write(f"{i},".encode('ascii'))
-                        f.write(b'\n')      # log raw bytes safely
+                cmd_sock.sendto(command_to_be_sent.encode('ascii'),
+                                (UDP_CMD_IP, UDP_CMD_PORT))
+                print(f"Sent command: {command_to_be_sent!r} → {UDP_CMD_IP}:{UDP_CMD_PORT}")
+            except OSError as e:
+                print(f"UDP send error: {e}")
+            finally:
+                send_command = False
 
-                    #print([len(s) for s in line])
-                    #print(line)
-                    #print(data)
-                    #print("recv Data")
-            except (serial.SerialException, OSError):
-                print("Teensy disconnected")
-                ser.close()
-                ser = None
-            if send_command:
-                    ser.write(command_to_be_sent.encode('ascii'))
-                    send_command = False
+        # ── Receive telemetry packet ──────────────────────────────────────────
+        try:
+            raw, addr = recv_sock.recvfrom(UDP_BUFFER_SIZE)
+        except socket.timeout:
+            continue
+        except OSError as e:
+            print(f"UDP recv error: {e}")
+            continue
 
+        # Each telemetry value is a 4-byte little-endian float, same as before
+        num_floats = len(raw) // 4
+        if num_floats == 0:
+            continue
+
+        parsed = list(struct.unpack('<' + 'f' * num_floats, raw[:num_floats * 4]))
+
+        with lock:
+            data = parsed
+
+        # Log to file  (comma-separated floats, one packet per line)
+        with open(path + "/" + log_file, "ab") as f:
+            for val in parsed:
+                f.write(f"{val},".encode('ascii'))
+
+            f.write(b'\n')
+
+print("UDP target IP:", UDP_CMD_IP)
+print("UDP target port:", UDP_CMD_PORT)
+print("UDP receive port:", UDP_RECV_PORT)
 
 @app.route("/")
 def index():
@@ -220,6 +220,7 @@ def get_local_ip():
         s.close()
     return ip
 
+# ── Telemetry broadcast ─────────────────────────────────────
 last_time = time.time()
 def telemetry():
     while True:
@@ -240,7 +241,8 @@ def telemetry():
             "battery": round(random.uniform(10.5, 12.6), 2)
         })'''
         if len(my_data) == 34:
-            temp_data = [(time.time()-start_time), #0: Time
+            temp_data = [
+                (time.time()-start_time), #0: Time
                          data[0],  #1: Pos X
                          data[1],  #2: Pos Y
                          data[2],  #3: Pos Z
@@ -281,6 +283,7 @@ def telemetry():
             #print("send data")
             # Emit as binary payload
             socketio.emit("float_buffer", binary_data)
+            
         socketio.sleep(0.01)
 
 def run_flask():
@@ -296,6 +299,6 @@ flask_thread = threading.Thread(target=run_flask, daemon=False)
 flask_thread.start()
 
 # Start the serial thread
-thread = threading.Thread(target=serial_thread, daemon=False)
+thread = threading.Thread(target=udp_recv_thread, daemon=False)
 thread.start()
     
