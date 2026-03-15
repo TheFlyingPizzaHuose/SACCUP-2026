@@ -45,7 +45,7 @@ UDP_BUFFER_SIZE  = 4096
 cmd_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
 
-# ── UDP Receive Thread (replaces serial_thread) ───────────────────────────────
+# ── UDP Receiver───────────────────────────────
 def udp_recv_thread():
     global data, send_command, command_to_be_sent
 
