@@ -59,7 +59,7 @@ uint8_t msg_class_01[22][10] = {{1,1,1}, //Ignition Abort
 
 uint8_t msg_class_02[6][10] = {{5,5,5,5,5,5,5,5,5,5}, //AV1 Telemetry
                               {5,5,5,5,5,5,5,5,5,5}, //AV2 Telemetry
-                              {5,5,5,5,5,5}, //GSE Temps, Presses, Supply and Rocket Mass
+                              {5,5,5,5,5,5,4}, //GSE Temps, Presses, Supply and Rocket Mass
                               {4,5,5,5}, //AV1 Detected Flight Events
                               {4,5,5,5}, //AV2 Detected Flight Events
                               {4} //GSE States
@@ -191,10 +191,10 @@ void setup() {
   digitalWrite(RFM95_RST, LOW);
   delay(10);*/
   if (!rf95.init()){
-    //Serial.println("RFM9x init failed");  
+    Serial.println("RFM9x init failed");  
   }else{
-    //Serial.println("RFM9x init sucess");
-    rf95.setFrequency(GSE_FREQ);
+    Serial.println("RFM9x init sucess");
+    rf95.setFrequency(AV1_FREQ);
     rf95.setTxPower(RFM95_PWR, false);
   }
   //Serial.println("Type \"h\" for a list of commands");
@@ -296,34 +296,34 @@ void read_telem(uint8_t msg_class, uint8_t msg_id){
     }
     if(msg_id == 0x03){//GSE telemetry
       //pc_telem[7] = out_floats[0];//Supply Temp
-      pc_telem[15] = out_floats[0];//Ox-tank pressure HACK
+      pc_telem[16] = out_floats[0];//Ox-tank pressure HACK
       pc_telem[8] = out_floats[1];//Rocket Temp
       pc_telem[9] = out_floats[2];//N2O Line Pres
       pc_telem[10] = out_floats[3];//N2 Line Pres
       pc_telem[11] = out_floats[4];//Supply Mass
       pc_telem[12] = out_floats[5];//Rocket Mass
+      pc_telem[13] = out_int32s[6];//Command count
       //Serial.println(out_floats[4]);
-      //Serial.println(out_floats[5]);
     }
     if(msg_id == 0x04){//AV1 Events, Pressures, Voltage
-      pc_telem[15] = out_floats[2];//AV1 Ox-tank pressure
-      pc_telem[17] = out_floats[3];//AV1 Battery Voltage
+      pc_telem[16] = out_floats[2];//AV1 Ox-tank pressure
+      pc_telem[18] = out_floats[3];//AV1 Battery Voltage
     }
     if(msg_id == 0x05){//AV2 Events, Pressures, Voltage
-      pc_telem[16] = out_floats[1];//AV2 CO2 pressure
-      pc_telem[18] = out_floats[3];//AV2 Battery Voltage
+      pc_telem[17] = out_floats[1];//AV2 CO2 pressure
+      pc_telem[19] = out_floats[3];//AV2 Battery Voltage
     }
     if(msg_id == 0x6){
-      pc_telem[19] = static_cast<float>((out_int32s[0] >> 0) & 1); //N2O Valve State
-      pc_telem[20] = static_cast<float>((out_int32s[0] >> 1) & 1); //N2 Valve State
-      pc_telem[21] = static_cast<float>((out_int32s[0] >> 2) & 1); //Poppet Valve State
-      pc_telem[22] = static_cast<float>((out_int32s[0] >> 3) & 1); //Quick Disconnect State
-      pc_telem[23] = static_cast<float>((out_int32s[0] >> 4) & 1); //Clamshell State
-      pc_telem[24] = static_cast<float>((out_int32s[0] >> 5) & 1); //AC Unite State
+      pc_telem[20] = static_cast<float>((out_int32s[0] >> 0) & 1); //N2O Valve State
+      pc_telem[21] = static_cast<float>((out_int32s[0] >> 1) & 1); //N2 Valve State
+      pc_telem[22] = static_cast<float>((out_int32s[0] >> 2) & 1); //Poppet Valve State
+      pc_telem[23] = static_cast<float>((out_int32s[0] >> 3) & 1); //Quick Disconnect State
+      pc_telem[24] = static_cast<float>((out_int32s[0] >> 4) & 1); //Clamshell State
+      pc_telem[25] = static_cast<float>((out_int32s[0] >> 5) & 1); //AC Unite State
     }
-    pc_telem[25] = GSE_RSSI;
-    pc_telem[26] = AV1_RSSI;
-    pc_telem[27] = AV2_RSSI;
+    pc_telem[26] = GSE_RSSI;
+    pc_telem[27] = AV1_RSSI;
+    pc_telem[28] = AV2_RSSI;
   }
   Serial.write((uint8_t*)&pc_telem[0], sizeof(pc_telem[0]));Serial.print(',');
   Serial.write((uint8_t*)&pc_telem[1], sizeof(pc_telem[0]));Serial.print(',');
@@ -357,7 +357,8 @@ void read_telem(uint8_t msg_class, uint8_t msg_id){
   Serial.write((uint8_t*)&pc_telem[29], sizeof(pc_telem[0]));Serial.print(',');
   Serial.write((uint8_t*)&pc_telem[30], sizeof(pc_telem[0]));Serial.print(',');
   Serial.write((uint8_t*)&pc_telem[31], sizeof(pc_telem[0]));Serial.print(',');
-  Serial.write((uint8_t*)&pc_telem[32], sizeof(pc_telem[0]));Serial.println();
+  Serial.write((uint8_t*)&pc_telem[32], sizeof(pc_telem[0]));Serial.print(',');
+  Serial.write((uint8_t*)&pc_telem[33], sizeof(pc_telem[0]));Serial.println();
   Serial.flush();
 }
 
@@ -388,10 +389,9 @@ void read_RFM() {
         if(buf[4] == '2'){AV2_ACK_last_time = micros();}//Show AV2 has responded at this time
       }
       message_parser(buf);//Parse the message
-      if(recv_ready){
-        read_telem(buf[0], buf[1]);
-        recv_ready = 0;
-      }
+      //if(recv_ready){
+      read_telem(buf[0], buf[1]);
+      recv_ready = 0;
       //No need for ACK code here :)
     }
     else

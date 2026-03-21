@@ -18,9 +18,11 @@ https://docs.google.com/document/d/1AqIgfhQb1Wmkl7yFG0nSHRvpzL-viViXBCPfHbvtkt0/
 */
 #include <RH_RF95.h> // Include RFM9X library
 #include <SPI.h>               // SPI library
+#include <math.h>
+#include <Ethernet.h>
+#include <EthernetUdp.h>
 #include <map>
 #include <string>
-//#include <HX711.h>//https://github.com/bogde/HX711
 #include <ADC.h>
 #include <ADC_util.h>
 #include <SD.h>                // SD card library
@@ -29,22 +31,38 @@ https://docs.google.com/document/d/1AqIgfhQb1Wmkl7yFG0nSHRvpzL-viViXBCPfHbvtkt0/
 //===============Constant Variables===============
 
 //SD card variables
-#define SD_CS 5
+#define SD_CS 9
 File logfile;
 
 //RFM9x pin assignments
 #define RFM95_CS 10
-#define RFM95_INT 8
-#define RFM95_RST 9
+#define RFM95_INT 4
+#define RFM95_RST 5
 // Singleton instance of the radio driver
 RH_RF95 rf95(RFM95_CS,RFM95_INT);
 const int RFM95_PWR = 23;
 
-//Valve MOSFET pin assignments: Refer to GSE KICAD schematic
-#define N2O_pin 20 //A6
+//Ethernet pin assignments
+#define ETH_CS 3
+// Enter a MAC address and IP address for your controller below.
+// The IP address will be dependent on your local network:
+byte mac[] = {
+  0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED
+};
+IPAddress ip(192, 168, 1, 177);//Pad Computer IP Adress
+unsigned int localPort = 8888; //Pad Computer port
+IPAddress remoteIP(192, 168, 1, 255); //Ground Station PC IP Adress
+unsigned int remotePort = 3000;
+
+// An EthernetUDP instance to let us send and receive packets over UDP
+EthernetUDP Udp;
+
+//Valve limit switch sense pins
+#define N2O_pin 8 //A6
 #define N2_pin 7
+
+//Valve MOSFET pin assignments: Refer to GSE KICAD schematic
 #define IGNITER_pin 6
-#define POPPET_pin 14 //A0
 #define AC_pin 2
 #define QD_pin 23
 
@@ -75,7 +93,7 @@ uint8_t msg_class_01[22][10] = {{1,1,1}, //Ignition Abort
 
 uint8_t msg_class_02[6][10] = {{5,5,5,5,5,5,5,5,5,5}, //AV1 Telemetry
                               {5,5,5,5,5,5,5,5,5,5}, //AV2 Telemetry
-                              {5,5,5,5,5,5}, //GSE Temps, Presses, Supply and Rocket Mass
+                              {5,5,5,5,5,5,4}, //GSE Temps, Presses, Supply and Rocket Mass
                               {4,5,5,5}, //AV1 Detected Flight Events
                               {4,5,5,5}, //AV2 Detected Flight Events
                               {4} //GSE States
@@ -92,17 +110,26 @@ u_int8_t msg_class_03[7][10] = {{1,1,1}, //No Igniter Continuity
                                       };
 
 //Time between component usages in micros
-const uint RFM9x_rate = 50000;
+const uint RFM9x_rate = 100000;
+const uint ETH_rate = 100000;
 const uint SD_rate = 50000;
 const uint Pres_rate = 50000;
 const uint Temp_rate = 50000;
 const uint HX711_rate = 100;
+const uint QDcomm_rate = 20000;
 
-//HX711 pin assignments
-#define DOUT 19
-#define CLK 18
-const float load_cell_scale = 1;
-Adafruit_HX711 hx711(DOUT,CLK); //HX711 library object
+//QD Serial
+#define QDSerial Serial1
+
+//Rocket HX711 pin assignments
+#define DOUT1 16
+#define CLK1 18
+Adafruit_HX711 rocket_load(DOUT1,CLK1); //HX711 library object
+
+//Rocket HX711 pin assignments
+const uint8_t DATA_PIN2 = 14;  // Can use any pins!
+const uint8_t CLOCK_PIN2 = 15; // Can use any pins!
+Adafruit_HX711 supply_load(DATA_PIN2,CLOCK_PIN2); //HX711 library object
 
 ADC *adc = new ADC(); // adc object
 
@@ -139,7 +166,7 @@ const float press_1_ratio = (press_1_R1+press_1_R2)/(press_1_R2);
 const float pressure_1_min_volt = 0.5/press_1_ratio;
 const float pressure_1_max_volt = 4.5/press_1_ratio-pressure_1_min_volt;*/
 
-const uint8_t pressure_2_pin = A2;
+const uint8_t pressure_2_pin = A5;
 /*const float press_2_R1 = 680; //Ohm
 const float press_2_R2 = 330; //Ohm
 const float press_2_ratio = (press_2_R1+press_2_R2)/(press_2_R2);
@@ -147,11 +174,16 @@ const float pressure_2_min_volt = 0.5/press_2_ratio;
 const float pressure_2_max_volt = 4.5/press_2_ratio-pressure_2_min_volt;*/
 
 const uint8_t temp_1_pin = A8;
-const float temp_1_R = 47800; //Ohm
+const uint temp_const_A = 1/75.127;
+const uint temp_const_B = 1/101;
+const uint temp_const_C = 1/23.8;
 
 const uint8_t temp_2_pin = A7;
 const float temp_2_R = 46500; //Ohm
 //===============Dynamic Variables===============
+
+//Count of received variables
+uint32_t command_count = 0;
 
 // Different Computer Frequencies
 float GSE_FREQ = 432.875;
@@ -172,6 +204,7 @@ float out_floats[10];
 
 //Times of last component usages
 uint RFM9x_last_time = 0;
+uint ETH_last_time = 0;
 uint SD_last_time = 0;
 uint HX711_last_time = 0;
 uint Pressure_last_time = 0;
@@ -183,8 +216,9 @@ std::map<std::string, bool> error_status = {
     {"MAIN_PWR_FAULT", false},
     {"SAMM8Q_FAIL", false},
     {"SD_FAIL", false},
-    {"RFM9X_FAIL", false},
-    {"HX711_FAIL", false}
+    {"ETHERNET_FAIL", false},
+    {"HX711_FAIL", false},
+    {"RFM9X_FAIL", false}
 };
 
 //Current load cell being read
@@ -208,6 +242,9 @@ uint32_t in_int32s[10] ;
 float in_floats[10] ;
 
 //Message assembler buffer, message length, and message ready boolean
+
+// buffers for receiving and sending data
+uint8_t recv_buffer[UDP_TX_PACKET_MAX_SIZE];  // buffer to hold incoming packet,
 uint8_t message_send_buf[43];
 uint8_t message_send_len = 0;
 bool msg_ready = 0;
@@ -239,21 +276,26 @@ char* check_file_on_SD(bool mode = 0) {  //Alleon Oxales
 }
 
 void setup() {
-  pinMode(N2O_pin, OUTPUT);
-  Serial.begin(115200);
+  Serial.begin(115200);/*
   Serial.print("Reset Register Value: ");
   Serial.println(SRC_SRSR);
   if(SRC_SRSR != 1){}// Read reset status register and PRGM_ERR if reset is not a power cycle
+  in_int8s[0] = SRC_SRSR;
+  message_assembler(0x03, 0x07);
+  msg_ready = 1;
+  */
   //===SD Card INIT===
-  if (false && !SD.begin(SD_CS)) { 
+  Serial.println("SD Init");
+  if (!SD.begin(SD_CS)) { 
     error_status["SD_FAIL"] = true; 
     Serial.println("SD fail");
   }else{
-    //Serial.println("SD init sucess");
+    Serial.println("SD init sucess");
   }  //Init SD, this comes first to be able to check the latest log file
-  logfile = SD.open(check_file_on_SD(), FILE_WRITE);  //Opens new file with highest index
-  /*
+  //logfile = SD.open(check_file_on_SD(), FILE_WRITE);  //Opens new file with highest index
+  
   //===RFM9x RADIO INIT===
+  /*
   pinMode(RFM95_RST, OUTPUT);
   Serial.println("Reset RFM9x");
 
@@ -267,18 +309,25 @@ void setup() {
     Serial.println("RFM9x fail");
     error_status["RFM9X_FAIL"] = true; 
   }else{
-    //Serial.println("RFM9x init sucess");
+    Serial.println("RFM9x init sucess");
     rf95.setFrequency(GSE_FREQ);
     rf95.setTxPower(RFM95_PWR, false);
   }
 
+  //===Ethernet INIT===
+  Ethernet.init(ETH_CS);
+  Ethernet.begin(mac, ip);
+  if (Ethernet.hardwareStatus() == EthernetNoHardware) {error_status["ETHERNET_FAIL"] = true;}
+  if (Ethernet.linkStatus() == LinkOFF) {error_status["ETHERNET_FAIL"] = true;}
+  if (!error_status["ETHERNET_FAIL"]) {Udp.begin(localPort);}
+  
   //===HX711 LOAD CELL AMP INIT===
-  hx711.begin();
+  //rocket_load.begin();
+  supply_load.begin();
   // read and toss 3 values each
   Serial.println("Tareing....");
-  tare_load_cell_A();
+  //tare_load_cell_A();
   tare_load_cell_B();
-  set_load_channel_A();
 
   //===ADC0 SETUP===
   pinMode(pressure_1_pin, INPUT);
@@ -301,24 +350,28 @@ void setup() {
   #endif
 
   //===Control Pins Setup===
-  pinMode(N2O_pin, OUTPUT);
-  pinMode(N2_pin, OUTPUT);
+  pinMode(N2O_pin, INPUT);
+  pinMode(N2_pin, INPUT);
   pinMode(IGNITER_pin, OUTPUT);
-  pinMode(POPPET_pin, OUTPUT);
   pinMode(AC_pin, OUTPUT);
   pinMode(QD_pin, OUTPUT);
 }
 
 void loop()
 {
-  if(!error_status["RFM9X_FAIL"] && rf95.available()){
+  if(!error_status["ETHERNET_FAIL"]){
+    //read_ETH();
+  }else if(!error_status["RFM9X_FAIL"] && rf95.available()){
     read_RFM();
   }else{
     read_pressure();
     //read_temp_1();
     prep_telem();
+    //send_ETH();
     send_RFM();
-    read_load_cell();
+    //read_rocket_load();
+    read_supply_load();
+    write_to_SD();
   }
 }
 //==========COMMAND CODE==========Alleon Oxales
@@ -326,6 +379,7 @@ void perform_command(uint8_t msg_class, uint8_t msg_id){
   if(msg_class == 0x01){
     if(out_flag[0] == 0xFF && out_flag[1] == 0xFF && out_flag[2] == 0xFF){
       Serial.println("COMMAND RECEIVED ASSHOLE");
+      command_count++;
       switch(msg_id){
         case 0x01: //Ignition Abort
           break;
@@ -333,26 +387,14 @@ void perform_command(uint8_t msg_class, uint8_t msg_id){
           break;
         case 0x03: //Ignition Sequence Start
           break;
-        case 0x04: //N2O Fill Valve Open
-          digitalWrite(N2O_pin, HIGH);
-          break;
-        case 0x05: //N2O Fill Valve Close
-          digitalWrite(N2O_pin, LOW);
-          break;
-        case 0x06: //N2 Fill Valve Open
-          digitalWrite(N2_pin, HIGH);
-          break;
-        case 0x07: //N2 Fill Valve Closed
-          digitalWrite(N2_pin, LOW);
-          break;
         case 0x08:{ //Relief Valve Open
-          Serial.println("OPEN RELIEF");
-          digitalWrite(POPPET_pin, LOW);
+          Serial.println("OPEN RELIEF DEPRECATED");
+          //digitalWrite(POPPET_pin, LOW);
           break;
         }
         case 0x09:{ //Relief Valve Closed
-          Serial.println("CLOSE RELIEF");
-          digitalWrite(POPPET_pin, HIGH);//It's high for closed since poppet is normally open
+          Serial.println("CLOSE RELIEF DEPRECATED");
+          //digitalWrite(POPPET_pin, HIGH);//It's high for closed since poppet is normally open
           break;
         }
         case 0x0A: //Disconnect Rocket Fill Line
@@ -378,12 +420,6 @@ void perform_command(uint8_t msg_class, uint8_t msg_id){
           rf95.setFrequency(GSE_FREQ);
           break;
         }
-        case 0x15:
-          set_load_channel_A();
-          break;
-        case 0x16:
-          set_load_channel_B();
-          break;
         default:
           break;
       }
@@ -395,52 +431,39 @@ void perform_command(uint8_t msg_class, uint8_t msg_id){
   out_flag[2] = 0;
 }
 //==========LOAD CELL CODE==========Alleon Oxales
-void read_load_cell(){
-  if(current_load_cell == 0){
-    load_cell_output1 = hx711.readChannelRaw(CHAN_A_GAIN_128)*0.0001506684879 - load_cell_tare1;
-    logfile.print(micros());
-    logfile.print("|5|");
-    logfile.println(load_cell_output1);
-    //Serial.println(load_cell_output1);
-  }
-  if(current_load_cell == 1){
-    load_cell_output2 = hx711.readChannelRaw(CHAN_B_GAIN_32) - load_cell_tare2;
-    logfile.print(micros());
-    logfile.print("|6|");
-    logfile.println(load_cell_output2);
-    //Serial.println(load_cell_output2);
-  }
+void read_rocket_load(){
+  load_cell_output1 = rocket_load.readChannel(CHAN_A_GAIN_128)*0.0001506684879 - load_cell_tare1;
+  logfile.print(micros());
+  logfile.print("|5|");
+  logfile.println(load_cell_output1);
+  //Serial.println(load_cell_output1);
+}
+void read_supply_load(){
+  load_cell_output2 = supply_load.readChannelRaw(CHAN_A_GAIN_128)*0.0001506684879 - load_cell_tare2;
+  logfile.print(micros());
+  logfile.print("|6|");
+  logfile.println(load_cell_output2);
+  //Serial.println(load_cell_output2);
 }
 void tare_load_cell_A(){//WIP
-  hx711.tareA(hx711.readChannelRaw(CHAN_A_GAIN_128));
-  hx711.tareA(hx711.readChannelRaw(CHAN_A_GAIN_128));
-  load_cell_tare1 = hx711.readChannelRaw(CHAN_A_GAIN_128)*0.0001506684879;
+  for (uint8_t t=0; t<3; t++) {
+    rocket_load.tareA(rocket_load.readChannelRaw(CHAN_A_GAIN_128));
+    rocket_load.tareA(rocket_load.readChannelRaw(CHAN_A_GAIN_128));
+  }
+  load_cell_tare1 = rocket_load.readChannelRaw(CHAN_A_GAIN_128)*0.0001506684879;
 }
 void tare_load_cell_B(){
-  hx711.tareB(hx711.readChannelRaw(CHAN_B_GAIN_32));
-  hx711.tareB(hx711.readChannelRaw(CHAN_B_GAIN_32));
-  load_cell_tare2 = hx711.readChannelRaw(CHAN_B_GAIN_32);
+  for (uint8_t t=0; t<3; t++) {
+    supply_load.tareA(supply_load.readChannelRaw(CHAN_A_GAIN_128));
+    supply_load.tareA(supply_load.readChannelRaw(CHAN_A_GAIN_128));
+  }
+  load_cell_tare2 = supply_load.readChannelRaw(CHAN_A_GAIN_128)*0.0003403090792;
 }
-void set_load_channel_A(){
-  Serial.println("set chan A");
-  hx711.readChannelRaw(CHAN_A_GAIN_128);
-  hx711.readChannelRaw(CHAN_A_GAIN_128);
-  hx711.readChannelRaw(CHAN_A_GAIN_128);
-  current_load_cell = 0;
-}
-void set_load_channel_B(){
-  Serial.println("set chan B");
-  hx711.readChannelRaw(CHAN_B_GAIN_32);
-  hx711.readChannelRaw(CHAN_B_GAIN_32);
-  hx711.readChannelRaw(CHAN_B_GAIN_32);
-  current_load_cell = 1;
-}
-
 
 //==========SD CARD CODE==========
 void write_to_SD(){
   if (micros() - SD_last_time> SD_rate && !error_status["SD_FAIL"]){
-        logfile.flush();
+    logfile.flush();
   }
 }
 
@@ -457,13 +480,13 @@ float read_voltage(uint8_t pin) {//Kartik Function to read true voltage from a v
 void read_pressure(){//Alleon Oxales
   if(micros()-Pressure_last_time > Pres_rate){
     float voltage = read_voltage(pressure_1_pin);
-    pressure_1_output = 1.13636*voltage*1000-352.27273;
+    pressure_1_output = 1.17*voltage*1000-370;
     logfile.print(micros());
     logfile.print("|1|");
     logfile.println(pressure_1_output);
 
     voltage = read_voltage(pressure_2_pin);
-    pressure_2_output = 1.18297*voltage*1000-380;
+    pressure_2_output = 1.15*voltage*1000-370;
     logfile.print(micros());
     logfile.print("|2|");
     logfile.println(pressure_2_output);
@@ -472,9 +495,7 @@ void read_pressure(){//Alleon Oxales
     //Serial.print("|1|");
     Serial.print(pressure_1_output);
     Serial.print(',');
-    Serial.print(pressure_2_output);
-    Serial.print(',');
-    read_temp_1();
+    Serial.println(pressure_2_output);
     //Serial.flush();
    // Serial.print("|5|");
     //Serial.println(load_cell_output);
@@ -482,8 +503,8 @@ void read_pressure(){//Alleon Oxales
 }
 void read_temp_1(){//Alleon Oxales
   float voltage = read_voltage(temp_1_pin);
-  //float temp_resistance = (5*temp_1_R/voltage)*temp_1_R; TEMPORARILY REMOVED TO ALLOW FOR TANK PRESSURE MEASUREMENT
-  temp_1_output = 1.6129*voltage*1000-516;
+  float resistance = 25/voltage-50;
+  float temp_1_output = 1/(temp_const_A*log(temp_const_B*resistance) + temp_const_C);
   logfile.print(micros());
   logfile.print("|3|");
   logfile.println(temp_1_output);
@@ -491,12 +512,12 @@ void read_temp_1(){//Alleon Oxales
 }
 void read_temp_2(){//Alleon Oxales
   float voltage = read_voltage(temp_2_pin);
-  float temp_resistance = (5*temp_2_R/voltage)*temp_2_R; 
+  float resistance = 25/voltage-50;
+  float temp_2_output = 1/(temp_const_A*log(temp_const_B*resistance) + temp_const_C);
   logfile.print(micros());
   logfile.print("|4|");
   logfile.println(temp_2_output);
 }
-
 //==========RADIO CODE==========Alleon Oxales
 void read_RFM() {
   if (!error_status["RFM9X_FAIL"] && rf95.available()) {
@@ -521,9 +542,37 @@ void read_RFM() {
   }
 }
 void send_RFM() {
-  if (!error_status["RFM9X_FAIL"] && micros()-RFM9x_last_time>RFM9x_rate && msg_ready){
+  if (!error_status["RFM9X_FAIL"] && micros()-RFM9x_last_time>RFM9x_rate && msg_ready){ 
     rf95.send(message_send_buf, message_send_len);
     RFM9x_last_time = micros();
+    msg_ready = 0;
+  }
+}
+//==========ETHERNET CODE==========Alleon Oxales
+void read_ETH() {
+  int packetSize = Udp.parsePacket();
+  if (!error_status["ETHERNET_FAIL"] && packetSize) {
+    // Should be a message for us now
+    remoteIP = Udp.remoteIP();
+    remotePort = Udp.remotePort();
+    Udp.read(recv_buffer, UDP_TX_PACKET_MAX_SIZE);
+
+    char data[] = "ACK0"; //ACK0: GSE, ACK1: AV1, ACK2: AV2
+
+    Udp.beginPacket(remoteIP,remotePort);
+    Udp.write(data);
+    Udp.endPacket();
+
+    message_parser(recv_buffer);//Parse the message
+    perform_command(recv_buffer[0], recv_buffer[1]);
+  }
+}
+void send_ETH() {
+  if (!error_status["ETHERNET_FAIL"] && micros()-ETH_last_time>ETH_rate && msg_ready){
+    Udp.beginPacket(remoteIP,remotePort);
+    Udp.write((char*)message_send_buf);//Cast uint8_t pointer to char pointer
+    Udp.endPacket();
+    ETH_last_time = micros();
     msg_ready = 0;
   }
 }
@@ -647,14 +696,17 @@ void message_assembler(uint8_t msg_class, uint8_t msg_id){
   msg_ready = 1;
 }
 void prep_telem(){
-  in_floats[0] = temp_1_output;
-  in_floats[1] = temp_2_output;
-  in_floats[2] = pressure_1_output;
-  in_floats[3] = pressure_2_output;
-  in_floats[4] = load_cell_output1;
-  in_floats[5] = load_cell_output2;
-  message_assembler(0x02, 0x03);
-  msg_ready = 1;
+  if(!msg_ready){
+    in_floats[0] = temp_1_output;
+    in_floats[1] = temp_2_output;
+    in_floats[2] = pressure_1_output;
+    in_floats[3] = pressure_2_output;
+    in_floats[4] = load_cell_output1;
+    in_floats[5] = load_cell_output2;
+    in_int32s[6] = command_count;
+    message_assembler(0x02, 0x03);
+    msg_ready = 1;
+  }
 }
 //==========Data Type Conversion==========Alleon Oxales
 //Passes pointers to character array and converts those bytes to another type
