@@ -194,7 +194,7 @@ void setup() {
     Serial.println("RFM9x init failed");  
   }else{
     Serial.println("RFM9x init sucess");
-    rf95.setFrequency(AV1_FREQ);
+    rf95.setFrequency(GSE_FREQ);//GSE_FREQ);
     rf95.setTxPower(RFM95_PWR, false);
   }
   //Serial.println("Type \"h\" for a list of commands");
@@ -208,6 +208,7 @@ void loop() {
 //==========COMMAND CODE==========Alleon Oxales
 void send_command(){
   if(Serial.available()){
+    Serial.println("HAHA");
     char command = Serial.read();
     uint8_t command_id = 0;
     switch(command){//Switch case is best so it doesn't send a command if input is incorrect
@@ -243,6 +244,34 @@ void send_command(){
       } 
       case 'L': command_id = 0x15; break;
       case 'M': command_id = 0x16; break;
+      case 'x':{
+        //Manual reset of RFM9x
+        digitalWrite(RFM95_RST, HIGH);
+        delay(10);
+        digitalWrite(RFM95_RST, LOW);
+        delay(10);
+        if (!rf95.init()){
+          Serial.println("RFM9x init failed");  
+        }else{
+          Serial.println("RFM9x init sucess");
+          rf95.setFrequency(AV1_FREQ);
+          rf95.setTxPower(RFM95_PWR, false);
+        }
+      }
+      case 'z':{
+        //Manual reset of RFM9x
+        digitalWrite(RFM95_RST, HIGH);
+        delay(10);
+        digitalWrite(RFM95_RST, LOW);
+        delay(10);
+        if (!rf95.init()){
+          Serial.println("RFM9x init failed");  
+        }else{
+          Serial.println("RFM9x init sucess");
+          rf95.setFrequency(GSE_FREQ);
+          rf95.setTxPower(RFM95_PWR, false);
+        }
+      }
     }
     set_command_msg(command_id);
   }
@@ -277,6 +306,8 @@ void print_command_list(){
   Serial.println("K: Set AV2 Radio Frequency");
   Serial.println("L: Set load cell channel to A");
   Serial.println("M: Set load cell channel to B");
+  Serial.println("+ Set Radio Frequency to GSE");
+  Serial.println("= Set Radio Frequency to AV1");
 }
 //==========TELEMETRY CODE==========Alleon Oxales
 void read_telem(uint8_t msg_class, uint8_t msg_id){
@@ -372,6 +403,7 @@ void read_RFM() {
     if (rf95.recv(buf, &len)) {
       //Serial.print("RSSI: ");
       //Serial.println(rf95.lastRssi(), DEC);
+      //Serial.println((char*)buf);
       if(freq_select_index == 0){
         GSE_RSSI = static_cast<float>(rf95.lastRssi());
       }
