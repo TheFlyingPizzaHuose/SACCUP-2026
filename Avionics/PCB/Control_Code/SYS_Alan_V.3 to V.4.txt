@@ -1,0 +1,94 @@
+V.3.1
+
+- increase constatnt preassure sensors reading from 1 to all 4 according to pins
+	and be able to send it all by radio
+		idies from Avionics datasheet file
+- LSM6DSOX1 read function no radio yet
+- ADXL375 read function no radio yet
+
+For debug system.
+	First I need to able to call all the function I can call from Ground station.
+	Keep the menu, local status, and all functions we have already
+	Add ability to send check message by radio like 'PCB online' to ground station (nano station pad)
+	All modules initiation say 'online' + name of the module
+
+For SD 
+	Let it record all in this order and store it as a table date in the log file:
+		statuses of MAIN_VALVE, RELIEF_VALVE, DUMP_VALVE, pressures from PRESSURE_TRANSDUCER_1, PRESSURE_TRANSDUCER_2, PRESSURE_TRANSDUCER_3, PRESSURE_TRANSDUCER_4, LSDM6DSOX, and ADXL375
+
+=======================================================================================================================================================================================================
+
+V.3.2
+
+[
+line: 466
+compute_valve_status_array() {
+    // 0 = none open, 1 = relief open, 2 = main open, 3 = both open
+]
+
+this code was made to track if the valves are open and check if the PCB received the command, now we are changing it to different method.
+	Create a variable commands_received that will count amount of command PCB receved so far from ground station.
+	Delete compute_valve_status_array() and send by radion commands_received variable instead of that
+	Add time from start of PCB for now to SD file at the beginning of every row and also add commands_received as the second collum then goes everything else the way it is rn.
+	add it to status
+
+send_check_message() remove this one we have commands_received now
+
+for Valve test increase amount of delays cause its hard to catch the change.
+
+when clicking 'i' in debug menu, make it showing IMU data constantly every cycle until i ckicked again, same for pressure.
+add to debug ability to call all active pins.
+
+=======================================================================================================================================================================================================
+
+V.3.3
+
+Only for relief valve, HIGH is closed, LOW is open. So that functions for valve colntrol should be changed.
+
+add as a seria print in the beginning
+'
+                                                                                              +                                                         
+                                                                                             +                                                          
+                                                                                            +                                                           
+                                                                                           ++                                                           
+                                                                                         +++                                                            
+                                                                                        +π+                                                             
+                                                                                          +                                                             
+                                                                                         +                                                              
+                                                                                        +                                                               
+                ++++++++++++++    ×+++++++          +++++++      +++++++          +++++÷ ++++++++++     +++++++++++++++++   ++++++++                    
+              +++÷++++++++++++    ++≠≠≠÷+          ∞+=≠≠≠++     ++≠≠=≈++         ×+++   +++++≠≠≠=÷++   ++≠≠=≈+++++-≠≠≠=÷+=  +-≠≠≠-+                     
+             ++==≠+               +÷===++          ++====+      +÷==≠-+          +++ = +    +≠×===+    +×===++    +=====+  ++×===+≈                     
+             +×÷==+              ++===≠+           +÷==÷++     ++===÷+∞         +++ ∞ ++    +===≠++   ++÷=÷=+    ÷+==÷=++  ++==÷÷+                      
+            ++÷∞≈∞-++++++++≈     +===≠++          ++==÷≠+      ++===-+          ++ + ++++++++≠==++    +÷===≠++++++×=≠÷++  ++===≠++                      
+             -++++++++-==≠++    ++====+           +===≠-+     ++===≠++         + ÷ ×++=÷÷÷÷=+++++    ++===≠++++++++++++   +-===×+                       
+                      +==≠++    +÷===-+          ++==÷÷+      +====×+          ≠  ++×=÷÷===÷+        +×===-+             √+====+×                       
+                     +-==++    ++====-π          +÷===≠++   +++÷==-+≠        ×+ +++×+++++==÷++      ++====+π             ++===≠+                        
+          ++++++++++++++++     +÷÷÷==-+++++++++  +++÷===+++++-×+++++       ++ +++=≈÷+  =++==≠+++    +÷===×+             ++×====++++++++++               
+         √+++++++++++++       ++++++++++++++++    ∞+++++++++++++=       ×++  ++++++++    ++++++++  ++++++++             ++++++++++++++++                
+                           +√                                        π++                                                                                
+                              ++                                  +++                                                                                   
+                                  +++                        ++++                                                                                       
+                                       -+++++++++++++++++++÷                                                                                            
+'
+
+- BME600 read function no radio yet.
+	#define BME600_SCK_pin 19
+	#define BME600_SDI_pin 18
+- gps sparkfun SAM-M8Q read function no radio yet.
+	#define GPS_RX_pin 7
+	#define GPS_tx_pin 8
+	#define GPS_pps_pin 34
+- DS1307 with uRTCLib as a library read function no radio yet.
+	#define DS1307_SDA_pin 18
+	#define DS1307_SCL_pin 19
+	
+	change debug and log (sd) to include new sensors
+
+=======================================================================================================================================================================================================
+
+V.3.4
+
+Callibrarion of all modules/sensors.
+
+V 3 done -> V 4 ahead
