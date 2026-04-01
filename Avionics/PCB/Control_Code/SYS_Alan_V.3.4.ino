@@ -1,7 +1,7 @@
 /*
   SYS_Alan_V.3.4.ino
 
-  Callibration + debug
+  Callibration + debug BME680
 
 */
 // START -- START -- START -- START -- START -- START -- START -- START -- START
