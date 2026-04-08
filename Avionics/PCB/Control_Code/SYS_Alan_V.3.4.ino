@@ -3,6 +3,8 @@
 
   Callibration + debug BME680
 
+  write a function in C++ that takes (xg,yg,zg,phi) and returns (ex, ey, ez). Here is math functions we already have. refer to them. If you need any other basic or higher math calculations functions create them and use.
+
 */
 // START -- START -- START -- START -- START -- START -- START -- START -- START
 //================ LIBRARIES ==============
