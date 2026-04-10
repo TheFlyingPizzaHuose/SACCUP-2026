@@ -1,6 +1,7 @@
 #include "RotationMatrices.hpp"
 #include <tuple>
 #include <functional>
+#include "../csvWriter.hpp"
 
 // RK4 helper for vector<double>
 vector<double> rk4_step_vec(const vector<double>& y, double dt, const std::function<vector<double>(const vector<double>&)>& dydt) {
@@ -120,6 +121,12 @@ int main() {
         if (i%100==0) {
             cout << "V_B at t = " << time << ": " << " Vx: " << vb[0][0] << " Vy: " << vb[1][0] << " Vz: " << vb[2][0] << " m/s x: " << x0[0][0] << " y: " << x0[1][0] << " z: " << x0[2][0] <<"m\n";
         }
+
+        if (i%100==0){
+            cout << "V_B at t = " << time << ": " << " Vx: " << vb[0][0] << " Vy: " << vb[1][0] << " Vz: " << vb[2][0] << " m/s x: " << x0[0][0] << " y: " << x0[1][0] << " z: " << x0[2][0] <<"m\n";
+        }
+        vector<double> outputCSV = {time, x0[0][0], x0[1][0], x0[2][0], vb[0][0], vb[1][0], vb[2][0], q[0], q[1], q[2], q[3], omega_b[0][0], omega_b[1][0], omega_b[2][0]};
+        writeLineToCSV("RK4_output.csv", outputCSV);
     }
     return 0;
 }
