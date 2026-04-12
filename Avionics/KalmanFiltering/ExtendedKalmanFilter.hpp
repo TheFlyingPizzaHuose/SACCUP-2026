@@ -10,7 +10,6 @@ class ExtendedKalmanFilter{
     vector<vector<double>> Q; // Process Noise Covariance
     vector<vector<double>> H; // Measurement Function
     vector<vector<double>> R; // Measurement Noise Covariance
-    vector<vector<double>> S; //
     vector<vector<double>> K; // Kalman Gains
 
     function<vector<vector<double>>(const vector<vector<double>> state_, const double CD_, const double thrust_, const double area_, const double rho_, const double mass_, const double g_, const double dt_)> Jf;
@@ -99,7 +98,3 @@ class ExtendedKalmanFilter{
 vector<vector<double>> calculateQ2D(int dim, double dt){
     return vector<vector<double>>({{0.25*pow(dt,4), 0.5*pow(dt,3)},{0.5*pow(dt,3),pow(dt,2)}});
 }
-
-// class UKF{
-
-// }
