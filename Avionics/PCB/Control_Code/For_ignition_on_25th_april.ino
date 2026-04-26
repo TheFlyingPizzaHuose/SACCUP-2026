@@ -68,7 +68,7 @@ ignition tests
   #define DS1307_SCL_pin  19
 
   // Radio frequency to match Ground_Station_Nano current setup
-  float CONTROL_FREQ = 433.0f;
+  float CONTROL_FREQ = 915.0f;
 
   // ADC object (same style as pad computer code)
   ADC *adc = new ADC();
@@ -131,7 +131,7 @@ ignition tests
     {5,5,5,5,5,5,5,5,5,5}, // 0x01 AV1 Telemetry
     {5,5,5,5,5,5,5,5,5,5}, // 0x02 AV2 Telemetry
     {5,5,5,5,5,5,4},       // 0x03 GSE Temps, Presses, Masses, Command count
-    {4,5,5,5},             // 0x04 Status bit array, pressures, battery voltage
+    {4,4,4,5,5,5},             // 0x04 Status bit array, pressures, battery voltage
     {4,5,5,5},             // 0x05 Status bit array, pressures, battery voltage
     {4}                    // 0x06 State array
   };
@@ -221,6 +221,7 @@ ignition tests
     uint8_t message_send_buf[43] = {0};
     uint8_t message_send_len = 0;
     uint8_t msg_ready = 0;
+    uint8_t telem_index = 0;
     uint8_t recv_ready = 0;
 
   // Component usage timers
@@ -333,6 +334,7 @@ ignition tests
   void update_main_valve_ignition_hold();
   // how long MAIN valve stays forced open after ignition command
   const uint32_t MAIN_VALVE_AUTO_CLOSE_DELAY_MS = 4500;   // change as needed
+  const uint32_t MAIN_VALVE_OPEN_AFTER_START_MS = 28000;
 
   // true = radio is allowed to close MAIN valve
   // false = radio close command 0x05 is ignored
@@ -342,10 +344,18 @@ ignition tests
   bool main_valve_ignition_hold_active = false;
   uint32_t main_valve_ignition_start_time_ms = 0;
 
-  void update_main_valve_ignition_hold() {
-    if (!main_valve_ignition_hold_active) return;
+  //Countdown
+  int8_t countdown = -20;
 
-    if (millis() - main_valve_ignition_start_time_ms >= MAIN_VALVE_AUTO_CLOSE_DELAY_MS) {
+  void update_main_valve_ignition_hold() {
+    if (!main_valve_ignition_hold_active){
+      countdown = -20;
+      return;
+    }
+    if (millis() - main_valve_ignition_start_time_ms >= MAIN_VALVE_OPEN_AFTER_START_MS){
+      VALVE_open(MAIN_VALVE);
+    }
+    if (millis() - main_valve_ignition_start_time_ms >= MAIN_VALVE_OPEN_AFTER_START_MS+MAIN_VALVE_AUTO_CLOSE_DELAY_MS) {
       VALVE_close(MAIN_VALVE);
 
       main_valve_ignition_hold_active = false;
@@ -357,14 +367,18 @@ ignition tests
 
       Serial.println("IGNITION HOLD COMPLETE: MAIN valve auto-closed, AV1 disarmed");
     }
+    if((millis() - main_valve_ignition_start_time_ms)/1000 > (countdown+20)){
+      countdown++;
+      Serial.println(countdown);
+    }
   }
 //================ SETUP ================
   void setup() {
     Serial.begin(115200);
-    delay(1000);
+    delay(50);
 
     print_start_banner();
-    delay(3000);
+    delay(100);
 
     // Valve outputs
       pinMode(MAIN_VALVE.pin, OUTPUT);
@@ -424,6 +438,7 @@ ignition tests
       init_SD();
 
     // Reset RFM9X
+    /*
       pinMode(RFM9X_RST, OUTPUT);
       digitalWrite(RFM9X_RST, HIGH);
       delay(10);
@@ -431,6 +446,7 @@ ignition tests
       delay(10);
       digitalWrite(RFM9X_RST, HIGH);
       delay(10);
+    */
 
     SPI.begin();
 
@@ -457,9 +473,6 @@ ignition tests
   void loop() {
     //loops++;
     //Serial.println(loops);
-
-
-
     debug_serial();
 
     update_main_valve_ignition_hold();
@@ -475,17 +488,14 @@ ignition tests
     //read_BME680();
     finish_BME680_read();
 
-
     read_GPS();
     read_DS1307();
-
     if (pressure_stream_enabled) {
       Serial.print("P1 = "); Serial.print(pressure_1_output, 3);
       Serial.print(" | P2 = "); Serial.print(pressure_2_output, 3);
       Serial.print(" | P3 = "); Serial.print(pressure_3_output, 3);
       Serial.print(" | P4 = "); Serial.println(pressure_4_output, 3);
     }
-
     if (imu_stream_enabled) {
       Serial.print("LSM ACC = ");
       Serial.print(lsm_ax, 3); Serial.print(", ");
@@ -499,14 +509,12 @@ ignition tests
       Serial.print(adxl_ay, 3); Serial.print(", ");
       Serial.println(adxl_az, 3);
     }
-
     if (bme_stream_enabled) {
       Serial.print("BME T = "); Serial.print(BME680_temp, 3);
       Serial.print(" | H = "); Serial.print(BME680_humidity, 3);
       Serial.print(" | P = "); Serial.print(BME680_pressure, 3);
       Serial.print(" | GAS = "); Serial.println(BME680_gas_kohm, 3);
     }
-
     if (gps_stream_enabled) {
       Serial.print("GPS LAT = "); Serial.print(gps_lat, 7);
       Serial.print(" | LON = "); Serial.print(gps_lon, 7);
@@ -515,7 +523,6 @@ ignition tests
       Serial.print(" | FIX = "); Serial.print(gps_fix_type);
       Serial.print(" | PPS = "); Serial.println(gps_pps_state);
     }
-
     if (rtc_stream_enabled) {
       Serial.print("RTC = ");
       Serial.print(rtc_year); Serial.print("-");
@@ -525,7 +532,6 @@ ignition tests
       Serial.print(rtc_minute); Serial.print(":");
       Serial.println(rtc_second);
     }
-
     save_to_sd();
     prep_telemetry();
     send_RFM();
@@ -763,20 +769,29 @@ ignition tests
   }
 
   void prep_telemetry_states() {
-    // Msg 0x02-0x06 structure: {4}
-    in_int32s[0] = commands_received;
-    message_assembler(0x02, 0x06);
+    // Msg 0x02-0x06 structure: {4};
+    uint32_t status_array = 0;
+    status_array = status_array | (RELIEF_VALVE.state << 0);
+    status_array = status_array | (avionics_armed << 1);
+    //Serial.println(MAIN_VALVE.state);
+    in_int32s[0] = status_array;
+    in_int32s[1] = commands_received;
+    in_int32s[2] = countdown+21;
+    message_assembler(0x02, 0x04);
   }
 
   void prep_telemetry() {
-    // Alternate packets so the radio keeps the same basic behavior,
-    // but all 4 pressures and valve states get transmitted.
-    if (telemetry_select_index == 0) {
-      prep_telemetry_pressures();
-      telemetry_select_index = 1;
-    } else {
-      prep_telemetry_states();
-      telemetry_select_index = 0;
+    if(!RFM9X_FAIL && TX_enabled && (micros() - RFM9x_last_time > RFM9x_rate)){
+      // Alternate packets so the radio keeps the same basic behavior,
+      // but all 4 pressures and valve states get transmitted.
+      if (telemetry_select_index == 0) {
+        prep_telemetry_pressures();
+        telemetry_select_index = 1;
+      } else {
+        prep_telemetry_states();
+        telemetry_select_index = 0;
+      }
+      msg_ready = 1;
     }
   }
 
@@ -788,6 +803,7 @@ ignition tests
 
       if (rf95.recv(buf, &len)) {
         message_parser(buf);
+        Serial.println(rf95.lastRssi());
 
         if (recv_ready) {
           bool command_accepted = perform_command(buf[0], buf[1], true);
@@ -813,7 +829,7 @@ ignition tests
   }
 
   void send_RFM() {
-    if (!RFM9X_FAIL && TX_enabled && (micros() - RFM9x_last_time > RFM9x_rate) && msg_ready) {
+    if (msg_ready) {
       rf95.send(message_send_buf, message_send_len);
       msg_ready = 0;
       RFM9x_last_time = micros();
@@ -1008,7 +1024,6 @@ ignition tests
 
                 VALVE_close(RELIEF_VALVE);
                 VALVE_close(DUMP_VALVE);
-                VALVE_open(MAIN_VALVE);
 
                 command_handled = true;
                 Serial.println("IGNITION START ACCEPTED: MAIN valve opened and radio-close locked");
