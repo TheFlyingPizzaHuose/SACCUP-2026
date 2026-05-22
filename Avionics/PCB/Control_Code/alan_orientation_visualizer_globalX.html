@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ALAN V5 PCB Orientation Visualizer - Global X Flipped</title>
+  <style>
+    :root {
+      --bg: #0b0f14;
+      --panel: #121923;
+      --text: #d7e1ea;
+      --muted: #8392a2;
+      --line: #243140;
+      --red: #ff4d4d;
+      --green: #48d26a;
+      --blue: #5aa7ff;
+      --yellow: #ffd166;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      overflow: hidden;
+    }
+
+    .app {
+      display: grid;
+      grid-template-columns: 1fr 360px;
+      height: 100vh;
+    }
+
+    .viewport {
+      position: relative;
+      background:
+        radial-gradient(circle at 50% 45%, #162131 0%, #0b0f14 65%);
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    .side {
+      border-left: 1px solid var(--line);
+      background: var(--panel);
+      padding: 16px;
+      box-sizing: border-box;
+      overflow-y: auto;
+    }
+
+    h1 {
+      font-size: 20px;
+      margin: 0 0 12px;
+    }
+
+    h2 {
+      font-size: 14px;
+      margin: 20px 0 8px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    button {
+      width: 100%;
+      padding: 10px 12px;
+      margin: 6px 0;
+      background: #1f6feb;
+      border: 0;
+      border-radius: 8px;
+      color: white;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    button.secondary {
+      background: #2b3645;
+    }
+
+    .status {
+      padding: 10px;
+      border-radius: 8px;
+      background: #0d131b;
+      border: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.4;
+      white-space: pre-wrap;
+    }
+
+    .ok { color: var(--green); }
+    .bad { color: var(--red); }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-family: Consolas, monospace;
+      font-size: 13px;
+    }
+
+    td {
+      border: 1px solid var(--line);
+      padding: 7px;
+      text-align: right;
+      background: #0d131b;
+    }
+
+    .legend {
+      display: grid;
+      gap: 8px;
+      font-size: 14px;
+    }
+
+    .legend div {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .swatch {
+      width: 16px;
+      height: 16px;
+      border-radius: 4px;
+      display: inline-block;
+    }
+
+    .raw {
+      font-family: Consolas, monospace;
+      font-size: 12px;
+      color: var(--muted);
+      word-break: break-all;
+    }
+
+    .hint {
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.4;
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="viewport">
+      <canvas id="scene"></canvas>
+    </div>
+
+    <div class="side">
+      <h1>ALAN V5 PCB Orientation</h1>
+
+      <button id="connectBtn">Connect Serial</button>
+      <button id="disconnectBtn" class="secondary">Disconnect</button>
+
+      <div id="status" class="status">Not connected. Use Chrome or Edge. Select COM8 when prompted.</div>
+
+      <h2>Axes</h2>
+      <div class="legend">
+        <div><span class="swatch" style="background: var(--red);"></span>PCB local X axis</div>
+        <div><span class="swatch" style="background: var(--green);"></span>PCB local Y axis</div>
+        <div><span class="swatch" style="background: var(--blue);"></span>PCB local Z axis</div>
+        <div><span class="swatch" style="background: var(--yellow);"></span>Global +Z / Up</div>
+      </div>
+
+      <h2>Matrix</h2>
+      <table id="matrix">
+        <tr><td>1.00000</td><td>0.00000</td><td>0.00000</td></tr>
+        <tr><td>0.00000</td><td>1.00000</td><td>0.00000</td></tr>
+        <tr><td>0.00000</td><td>0.00000</td><td>1.00000</td></tr>
+      </table>
+
+      <h2>Last ORI line</h2>
+      <div id="raw" class="raw">Waiting for ORI,...</div>
+
+      <h2>Arduino format</h2>
+      <div class="hint">
+        Teensy must print:<br>
+        <code>ORI,m00,m01,m02,m10,m11,m12,m20,m21,m22</code><br><br>
+        Close Arduino Serial Monitor before connecting here. Only one program can own COM8 at a time.<br><br>This version flips the displayed global X direction, not PCB local X.
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const canvas = document.getElementById("scene");
+    const ctx = canvas.getContext("2d");
+    const connectBtn = document.getElementById("connectBtn");
+    const disconnectBtn = document.getElementById("disconnectBtn");
+    const statusEl = document.getElementById("status");
+    const matrixEl = document.getElementById("matrix");
+    const rawEl = document.getElementById("raw");
+
+    let port = null;
+    let reader = null;
+    let keepReading = false;
+
+    // Rows = PCB local axes expressed in global frame.
+    let M = [
+      [1, 0, 0],
+      [0, 1, 0],
+      [0, 0, 1]
+    ];
+
+    let lastPacketTime = 0;
+    let packetCount = 0;
+
+    function resizeCanvas() {
+      canvas.width = canvas.clientWidth * window.devicePixelRatio;
+      canvas.height = canvas.clientHeight * window.devicePixelRatio;
+      ctx.setTransform(window.devicePixelRatio, 0, 0, window.devicePixelRatio, 0, 0);
+    }
+
+    window.addEventListener("resize", resizeCanvas);
+    resizeCanvas();
+
+    function setStatus(text, ok = false, bad = false) {
+      statusEl.textContent = text;
+      statusEl.className = "status" + (ok ? " ok" : "") + (bad ? " bad" : "");
+    }
+
+    function updateMatrixTable() {
+      for (let r = 0; r < 3; r++) {
+        for (let c = 0; c < 3; c++) {
+          matrixEl.rows[r].cells[c].textContent = M[r][c].toFixed(5);
+        }
+      }
+    }
+
+    function parseLine(line) {
+      line = line.trim();
+      if (!line.startsWith("ORI,")) return;
+
+      const parts = line.split(",");
+      if (parts.length !== 10) return;
+
+      const nums = parts.slice(1).map(Number);
+      if (nums.some(v => !Number.isFinite(v))) return;
+
+      M = [
+        [nums[0], nums[1], nums[2]],
+        [nums[3], nums[4], nums[5]],
+        [nums[6], nums[7], nums[8]]
+      ];
+
+      packetCount++;
+      lastPacketTime = Date.now();
+      rawEl.textContent = line;
+      updateMatrixTable();
+    }
+
+    // Display convention correction:
+    // Teensy matrix is unchanged, but this browser displays global +X in the opposite screen direction.
+    // This matches the physical convention Mykhailo wants without flipping PCB local X separately.
+    function displayGlobal(v) {
+      return { x: -v.x, y: v.y, z: v.z };
+    }
+
+    // Simple pseudo-3D projection.
+    // Displayed global x = screen left/right after displayGlobal() correction, global z = screen up, global y = depth.
+    function project(v, scale, originX, originY) {
+      const depth = v.y;
+      const perspective = 1 / (1 + depth * 0.22);
+      const sx = originX + (v.x - v.y * 0.35) * scale * perspective;
+      const sy = originY - (v.z + v.y * 0.18) * scale * perspective;
+      return { x: sx, y: sy };
+    }
+
+    function drawArrow(origin, vec, color, label, scale) {
+      const end = project(vec, scale, origin.x, origin.y);
+
+      ctx.strokeStyle = color;
+      ctx.fillStyle = color;
+      ctx.lineWidth = 5;
+      ctx.lineCap = "round";
+
+      ctx.beginPath();
+      ctx.moveTo(origin.x, origin.y);
+      ctx.lineTo(end.x, end.y);
+      ctx.stroke();
+
+      const angle = Math.atan2(end.y - origin.y, end.x - origin.x);
+      const head = 16;
+
+      ctx.beginPath();
+      ctx.moveTo(end.x, end.y);
+      ctx.lineTo(end.x - head * Math.cos(angle - 0.45), end.y - head * Math.sin(angle - 0.45));
+      ctx.lineTo(end.x - head * Math.cos(angle + 0.45), end.y - head * Math.sin(angle + 0.45));
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.font = "bold 16px Arial";
+      ctx.fillText(label, end.x + 8, end.y - 8);
+    }
+
+    function drawGrid(origin, scale) {
+      ctx.strokeStyle = "rgba(255,255,255,0.08)";
+      ctx.lineWidth = 1;
+
+      for (let i = -5; i <= 5; i++) {
+        const a = project(displayGlobal({ x: -5, y: i, z: 0 }), scale * 0.22, origin.x, origin.y);
+        const b = project(displayGlobal({ x: 5, y: i, z: 0 }), scale * 0.22, origin.x, origin.y);
+        ctx.beginPath();
+        ctx.moveTo(a.x, a.y);
+        ctx.lineTo(b.x, b.y);
+        ctx.stroke();
+
+        const c = project(displayGlobal({ x: i, y: -5, z: 0 }), scale * 0.22, origin.x, origin.y);
+        const d = project(displayGlobal({ x: i, y: 5, z: 0 }), scale * 0.22, origin.x, origin.y);
+        ctx.beginPath();
+        ctx.moveTo(c.x, c.y);
+        ctx.lineTo(d.x, d.y);
+        ctx.stroke();
+      }
+    }
+
+    function animate() {
+      const w = canvas.clientWidth;
+      const h = canvas.clientHeight;
+      ctx.clearRect(0, 0, w, h);
+
+      const origin = { x: w * 0.50, y: h * 0.58 };
+      const scale = Math.min(w, h) * 0.28;
+
+      drawGrid(origin, scale);
+
+      // Global reference axes
+      drawArrow(origin, displayGlobal({ x: 1, y: 0, z: 0 }), "rgba(255,255,255,0.32)", "Global X", scale * 0.72);
+      drawArrow(origin, displayGlobal({ x: 0, y: 1, z: 0 }), "rgba(255,255,255,0.32)", "Global Y", scale * 0.72);
+      drawArrow(origin, displayGlobal({ x: 0, y: 0, z: 1 }), "#ffd166", "Global Z / Up", scale * 0.72);
+
+      // PCB local axes in global
+      drawArrow(origin, displayGlobal({ x: M[0][0], y: M[0][1], z: M[0][2] }), "#ff4d4d", "PCB X", scale);
+      drawArrow(origin, displayGlobal({ x: M[1][0], y: M[1][1], z: M[1][2] }), "#48d26a", "PCB Y", scale);
+      drawArrow(origin, displayGlobal({ x: M[2][0], y: M[2][1], z: M[2][2] }), "#5aa7ff", "PCB Z", scale);
+
+      ctx.fillStyle = "rgba(215,225,234,0.85)";
+      ctx.font = "15px Arial";
+      ctx.fillText("Packets: " + packetCount, 18, 28);
+
+      if (lastPacketTime > 0) {
+        const age = ((Date.now() - lastPacketTime) / 1000).toFixed(1);
+        ctx.fillText("Last update: " + age + " s ago", 18, 52);
+      }
+
+      requestAnimationFrame(animate);
+    }
+
+    animate();
+
+    connectBtn.addEventListener("click", async () => {
+      if (!("serial" in navigator)) {
+        setStatus("Web Serial API not supported. Use Chrome or Edge.", false, true);
+        return;
+      }
+
+      try {
+        port = await navigator.serial.requestPort();
+        await port.open({ baudRate: 115200 });
+
+        setStatus("Connected. Waiting for ORI packets...", true, false);
+
+        keepReading = true;
+        const textDecoder = new TextDecoderStream();
+        port.readable.pipeTo(textDecoder.writable);
+        reader = textDecoder.readable.getReader();
+
+        let buffer = "";
+
+        while (keepReading) {
+          const { value, done } = await reader.read();
+          if (done) break;
+          if (!value) continue;
+
+          buffer += value;
+          const lines = buffer.split(/\r?\n/);
+          buffer = lines.pop();
+
+          for (const line of lines) {
+            parseLine(line);
+          }
+        }
+      } catch (err) {
+        setStatus("Serial error: " + err.message, false, true);
+      }
+    });
+
+    disconnectBtn.addEventListener("click", async () => {
+      keepReading = false;
+
+      try {
+        if (reader) {
+          await reader.cancel();
+          reader.releaseLock();
+        }
+
+        if (port) {
+          await port.close();
+        }
+
+        setStatus("Disconnected.");
+      } catch (err) {
+        setStatus("Disconnect error: " + err.message, false, true);
+      }
+
+      reader = null;
+      port = null;
+    });
+  </script>
+</body>
+</html>
