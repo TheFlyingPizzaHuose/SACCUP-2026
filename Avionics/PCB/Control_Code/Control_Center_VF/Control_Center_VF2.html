@@ -1,0 +1,1692 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ALAN Control Center Floating Template</title>
+
+<style>
+/* =========================================================
+   EDIT THIS PART FIRST
+   Put the background image in the SAME FOLDER as this HTML.
+   Then change only the filename below.
+
+   Examples:
+   --background-image-url: url("Control Center Desing.png");
+   --background-image-url: url("my_dashboard_background.jpg");
+   --background-image-url: none;
+   ========================================================= */
+:root {
+  --dashboard-w: 1920px;
+  --dashboard-h: 2160px;
+  --page-h: 1080px;
+  --background-image-url: url("GUI_empty_design1.png");
+  --background-image-url-page-2: url("GUI_empty_design2.png");
+
+  --bg-blue: #030b4f;
+  --panel-blue: #050d58;
+  --black: #000000;
+  --white: #f5f7ff;
+
+  --green: #00c96b;
+  --red: #ff3333;
+  --yellow: #ead76b;
+
+  --button-dark: #1a2a3a;
+  --button-gray: #777777;
+  --button-blue: #2f7dff;
+}
+
+/* =========================================================
+   HOW TO POSITION ELEMENTS
+   Every visible element below has class="float".
+   To move anything, edit its inline style:
+
+   style="--x: 100px; --y: 200px; --w: 150px; --h: 40px;"
+
+   --x = left coordinate
+   --y = top coordinate
+   --w = width, optional
+   --h = height, optional
+   --z = z-index, optional
+   ========================================================= */
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  width: 100%;
+  height: 100%;
+  overflow-x: hidden;
+  overflow-y: auto;
+  background: #000;
+  color: var(--white);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Width-based scaling. The dashboard is 1920px wide and 2160px tall.
+   It uses two 1920x1080 background pages stacked vertically. */
+#scale-wrapper {
+  position: relative;
+  left: 0;
+  top: 0;
+  width: 100vw;
+  min-height: calc(2160px * var(--scale, 1));
+  overflow: visible;
+}
+
+#dashboard {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 1920px;
+  height: 2160px;
+  transform-origin: top left;
+  background: var(--bg-blue);
+  overflow: hidden;
+}
+
+#backgroundImageLayer,
+#backgroundImageLayer2 {
+  position: absolute;
+  left: 0;
+  width: 1920px;
+  height: 1080px;
+  background-size: 100% 100%;
+  background-position: center center;
+  background-repeat: no-repeat;
+  z-index: 0;
+  pointer-events: none;
+}
+
+#backgroundImageLayer {
+  top: 0;
+  background-image: var(--background-image-url);
+}
+
+#backgroundImageLayer2 {
+  top: 1080px;
+  background-image: var(--background-image-url-page-2);
+}
+
+.float {
+  position: absolute;
+  left: var(--x, 0px);
+  top: var(--y, 0px);
+  width: var(--w, auto);
+  height: var(--h, auto);
+  z-index: var(--z, 10);
+}
+
+/* General dynamic text */
+.dynamic-field {
+  font-size: 20px;
+  color: var(--white);
+  white-space: nowrap;
+}
+
+.label-text {
+  color: var(--white);
+  font-size: 20px;
+  white-space: nowrap;
+}
+
+/* Status colors */
+.status-good {
+  color: var(--green);
+}
+
+.status-bad {
+  color: var(--red);
+}
+
+/* Buttons */
+.control-button {
+  background: var(--button-dark);
+  color: var(--white);
+  border: 2px solid var(--black);
+  border-radius: 18px;
+  padding: 10px 18px;
+  font-size: 19px;
+  cursor: pointer;
+  text-align: center;
+}
+
+.control-button:hover {
+  filter: brightness(1.15);
+}
+.control-panel-button:hover{
+  font-size: 20px;
+  background-color: red;
+}
+.control-panel-button-abort {
+  font-size: 30px;
+}
+.control-panel-button-abort:hover{
+  font-size: 35px;
+  background-color: white;
+  color: red;
+}
+
+.serial-button {
+  background: var(--button-blue);
+}
+
+.disconnect-button {
+  background: var(--button-gray);
+}
+
+.log-button {
+  background: var(--button-dark);
+}
+
+/* Stage pills */
+.stage-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 120px;
+  padding: 8px 14px;
+  border: 3px solid var(--black);
+  border-radius: 18px;
+  background: var(--red);
+  color: #000;
+  font-size: 18px;
+  text-align: center;
+}
+
+.stage-pill.active {
+  background: var(--green);
+}
+
+/* Module pills */
+.module-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 80px;
+  padding: 10px 14px;
+  border: 3px solid var(--black);
+  border-radius: 24px;
+  background: var(--green);
+  color: #001b0d;
+  font-size: 17px;
+  text-align: center;
+}
+
+.module-pill.bad {
+  background: var(--red);
+}
+
+/* Valve visual circles */
+.valve-visual {
+  width: 56px;
+  height: 56px;
+  border: 3px solid var(--black);
+  border-radius: 50%;
+  background: var(--red);
+  color: #111;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  text-align: center;
+}
+
+.valve-visual.open {
+  background: var(--green);
+}
+
+/* Override */
+.override-status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 260px;
+  padding: 7px 14px;
+  border-radius: 16px;
+  background: var(--red);
+  color: #000;
+  font-size: 18px;
+  text-align: center;
+}
+
+.override-status.override-active {
+  background: var(--green);
+}
+
+/* Inputs */
+.command-input {
+  background: #fff;
+  color: #000;
+  border: 2px solid var(--black);
+  border-radius: 18px;
+  padding: 8px 14px;
+  font-size: 20px;
+}
+
+/* Tilt visual */
+#tiltVisualBox {
+  position: absolute;
+  left: var(--x, 0px);
+  top: var(--y, 0px);
+  width: var(--w, 260px);
+  height: var(--h, 180px);
+  border: 0px solid #fff;
+/*  border-top: 0px solid #fff;
+  border-right: 0px solid #fff;*/
+  background: transparent;
+  z-index: var(--z, 10);
+}
+
+.tilt-needle {
+  position: absolute;
+  left: 5px;
+  bottom: 5px;
+  width: 4px;
+  height: 130px;
+  background: #fff;
+  transform-origin: bottom center;
+  transform: rotate(0deg);
+}
+
+/* Optional visual helper: turn this on while placing elements. */
+.debug-box {
+  outline: 1px dashed rgba(255,255,255,0.3);
+}
+
+
+/* Backend-added graph canvas/window. Move using --x/--y/--w/--h like all float elements. */
+.graph-window {
+  background: rgba(3, 11, 79, 0.10);
+  border: 2px dashed rgba(255,255,255,0.35);
+  pointer-events: none;
+}
+
+/* Larger timeline text */
+.timeline-sign {
+  font-size: 82px;
+  line-height: 1;
+  font-weight: 500;
+}
+
+.timeline-value {
+  font-size: 46px;
+  line-height: 1;
+  text-align: center;
+}
+
+/* Simple modal for SET_TIME and SET_STAGE */
+#commandModalBackdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: rgba(0,0,0,0.65);
+  align-items: center;
+  justify-content: center;
+}
+
+#commandModal {
+  width: 520px;
+  background: #d7d7d7;
+  color: #111;
+  border: 4px solid #000;
+  border-radius: 18px;
+  padding: 20px;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+#commandModal h2 {
+  margin: 0 0 12px 0;
+}
+
+#commandModal input {
+  width: 100%;
+  font-size: 22px;
+  padding: 10px;
+  border: 2px solid #000;
+  border-radius: 10px;
+  margin-top: 10px;
+}
+
+.modal-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.modal-buttons button {
+  border: 2px solid #000;
+  border-radius: 12px;
+  padding: 8px 16px;
+  font-size: 18px;
+  cursor: pointer;
+}
+
+#modalSendBtn {
+  background: var(--button-blue);
+  color: #fff;
+}
+
+#serialDebugLog {
+  /*display: none;*/
+  position: absolute;
+  left: 607px;
+  top: 1083px;
+  width: 539px;
+  height: 355px;
+  background: rgba(0,0,0,0.88);
+  color: #bfe0ff;
+  border: 2px solid rgba(255,255,255,0.35);
+  padding: 10px;
+  font: 14px Consolas, monospace;
+  overflow: auto;
+  z-index: 999;
+  white-space: pre-wrap;
+}
+
+#serialDebugLog.visible {
+  display: block;
+}
+
+
+/* Design update: serial and radio link colors */
+.serial-button.serial-connected {
+  background: var(--green);
+  color: #000;
+}
+
+.serial-button.trajectory-uploaded {
+  background: var(--green);
+  color: #000;
+}
+
+.radio-link-good {
+  color: var(--green) !important;
+}
+
+.radio-link-bad {
+  color: var(--red) !important;
+}
+
+/* Design update: graph axis/grid styling */
+.graph-window {
+  border: none;
+}
+
+/* New VF2 GUI fields / placeholders. Move them with --x/--y/--w/--h. */
+.small-graph-window,
+.map-window {
+  background: rgba(3, 11, 79, 0.08);
+  border: 2px dashed rgba(255,255,255,0.35);
+  pointer-events: auto;
+}
+
+.radio-log-window {
+  background: rgba(3, 11, 79, 0.08);
+  border: 2px dashed rgba(255,255,255,0.35);
+  pointer-events: none;
+}
+
+.radio-log-window {
+  background: rgba(215, 215, 215, 0.45);
+  color: #111;
+  overflow: hidden;
+  padding: 8px;
+  font-size: 18px;
+}
+
+.open-log-button {
+  background: #777777;
+  color: #fff;
+}
+
+/* Commented/unused old fields can stay in HTML; new fields are appended near the end. */
+
+</style>
+</head>
+
+<body>
+
+<div id="scale-wrapper">
+  <div id="dashboard">
+    <div id="backgroundImageLayer"></div>
+    <div id="backgroundImageLayer2"></div>
+    <div id="serialDebugLog"></div>
+    <!-- PERFECT TRAJECTORY -->
+    <button id="uploadTraject" class="float control-button serial-button" style="--x: 100px; --y: 5px; --w: 308px; --h: 40px;">
+      Upload Perfect Trajectory
+    </button>
+    <input id="perfectTrajectoryInput" type="file" accept=".csv,.txt" style="display: none;">
+    <!-- then it changes to green and says 'perfect trajectory uploaded'-->
+
+    <!-- SERIAL -->
+    <button id="connectBtn" class="float control-button serial-button" style="--x: 287px; --y: 755px; --w: 308px; --h: 47px;">
+      Connect Serial
+    </button>
+
+    <button id="disconnectBtn" class="float control-button disconnect-button" style="--x: 608px; --y: 755px; --w: 200px; --h: 47px;">
+      disconnect
+    </button>
+
+    <span id="connectionText" class="float dynamic-field" style="--x: 1430px; --y: 22px;">DISCONNECTED</span>
+    <span class="float label-text" style="--x: 1600px; --y: 22px;">db:</span>
+    <span id="radioDbText" class="float dynamic-field" style="--x: 1630px; --y: 22px;">#</span>
+
+    <!-- STAGE -->
+    <span class="float label-text" style="--x: 1690px; --y: 80px;">STAGE:</span>
+    <span id="stageNumberText" class="float dynamic-field" style="--x: 1761px; --y: 80px;">#</span>
+    <span class="float label-text" style="--x: 1780px; --y: 80px;">|</span>
+    <span id="stageNameText" class="float dynamic-field" style="--x: 1790px; --y: 80px;">name</span>
+
+    <div id="stageWaitingPill" class="float stage-pill active" style="--x: 1314px; --y: 678px; --w: 109px; --h: 51px;">waiting</div>
+    <div id="stageArmedPill" class="float stage-pill" style="--x: 1430px; --y: 678px; --w: 104px; --h: 51px;">ARMED</div>
+    <div id="stageIgnitionPill" class="float stage-pill" style="--x: 1549px; --y: 678px; --w: 128px; --h: 51px;">IGNITION</div>
+    <div id="stageNoReturnPill" class="float stage-pill" style="--x: 1674px; --y: 678px; --w: 216px; --h: 51px;">NO TURN BACK</div>
+
+    <!-- ROCKET READOUTS -->
+    <!-- <span class="float label-text" style="--x: 40px; --y: 240px;">Velocity:</span> -->
+    <span id="velocityBoxText" class="float dynamic-field" style="--x: 1523px; --y: 135px;">#</span>
+
+    <!-- <span class="float label-text" style="--x: 40px; --y: 280px;">Fuel tank pressure:</span> -->
+    <span id="tankPressureBoxText" class="float dynamic-field" style="--x: 1516px; --y: 240px;">#</span>
+    <!-- <span class="float label-text" style="--x: 300px; --y: 280px;">psi</span> -->
+
+    <!-- <span class="float label-text" style="--x: 40px; --y: 320px;">Chamber pressure:</span> -->
+    <span id="chamberPressureBoxText" class="float dynamic-field" style="--x: 1516px; --y: 450px;">#</span>
+    <!-- <span class="float label-text" style="--x: 300px; --y: 320px;">psi</span> -->
+
+    <!-- <span class="float label-text" style="--x: 40px; --y: 360px;">Battery:</span> -->
+    <span id="batteryVoltageBoxText" class="float dynamic-field" style="--x: 1516px; --y: 392px;">#</span>
+    <!-- <span class="float label-text" style="--x: 200px; --y: 360px;">V</span> -->
+
+    <!-- <span class="float label-text" style="--x: 40px; --y: 400px;">CO2 pressure:</span> -->
+    <span id="co2PressureBoxText" class="float dynamic-field" style="--x: 1516px; --y: 320px;">#</span>
+    <!-- <span class="float label-text" style="--x: 250px; --y: 400px;">psi</span> -->
+
+    <!-- VALVES -->
+    <!-- <span class="float label-text" style="--x: 40px; --y: 470px;">OPEN:</span> -->
+    <span id="mainOpenText" class="float status-bad" style="--x: 1800px; --y: 137px;">M</span>
+    <span id="reliefOpenText" class="float status-bad" style="--x: 1841px; --y: 137px;">R</span>
+    <span id="dumpOpenText" class="float status-bad" style="--x: 1870px; --y: 137px;">D</span>
+
+    <!-- <span class="float label-text" style="--x: 40px; --y: 510px;">CON:</span> -->
+    <span id="mainConnectionText" class="float status-bad" style="--x: 1800px; --y: 173px;">M</span>
+    <span id="reliefConnectionText" class="float status-bad" style="--x: 1841px; --y: 173px;">R</span>
+    <span id="dumpConnectionText" class="float status-bad" style="--x: 1870px; --y: 173px;">D</span>
+
+    <div id="mainValveVisual" class="float valve-visual" style="--x: 1297px; --y: 332px;">main</div>
+    <div id="reliefValveVisual" class="float valve-visual" style="--x: 1294px; --y: 12px;">relief</div>
+    <!-- <div id="dumpValveVisual" class="float valve-visual" style="--x: 400px; --y: 460px;">dump</div> -->
+
+    <!-- KALMAN / ORACLE -->
+    <!-- <span class="float label-text" style="--x: 760px; --y: 40px;">Tilt:</span> -->
+    <span id="tiltDegText" class="float dynamic-field" style="--x: 1830px; --y: 383px;">0.0</span>
+    <!-- <span class="float label-text" style="--x: 875px; --y: 40px;">deg</span> -->
+
+    <!-- <span class="float label-text" style="--x: 760px; --y: 80px;">Alt:</span> -->
+    <span id="kalmanAltMText" class="float dynamic-field" style="--x: 1833px; --y: 282px;">0.0</span>
+    <!-- <span class="float label-text" style="--x: 900px; --y: 80px;">m</span> -->
+    <span id="kalmanAltFtText" class="float dynamic-field" style="--x: 1833px; --y: 307px;">0</span>
+    <!-- <span class="float label-text" style="--x: 1020px; --y: 80px;">ft</span> -->
+
+    <!-- <span class="float label-text" style="--x: 760px; --y: 120px;">Vel:</span> -->
+    <span id="kalmanVelMpsText" class="float dynamic-field" style="--x: 1833px; --y: 332px;">0.0</span>
+    <!-- <span class="float label-text" style="--x: 900px; --y: 120px;">m/s</span> -->
+    <span id="kalmanVelFpsText" class="float dynamic-field" style="--x: 1833px; --y: 353px;">0.0</span>
+    <!-- <span class="float label-text" style="--x: 1050px; --y: 120px;">ft/s</span> -->
+
+    <!-- <span class="float label-text" style="--x: 760px; --y: 160px;">Predicted apogee:</span> -->
+    <span id="predApogeeMText" class="float dynamic-field" style="--x: 1800px; --y: 430px;">0.0</span>
+    <!-- <span class="float label-text" style="--x: 1020px; --y: 160px;">m</span> -->
+    <span id="predApogeeFtText" class="float dynamic-field" style="--x: 1800px; --y: 454px;">0</span>
+    <!-- <span class="float label-text" style="--x: 1140px; --y: 160px;">ft</span> -->
+
+    <span id="timelineSignText" class="float dynamic-field timeline-sign" style="--x: 1632px; --y: 535px; --w: 125px; --h: 90px;">T-</span>
+    <span id="timelineValueText" class="float dynamic-field timeline-value" style="--x: 1768px; --y: 557px; --w: 90px; --h: 55px;">#</span>
+
+    <div id="tiltVisualBox" style="--x: 1622px; --y: 250px; --w: 175px; --h: 143px;">
+      <div id="tiltNeedle" class="tilt-needle"></div>
+    </div>
+
+    <!-- COMMAND BUTTONS -->
+    <button class="float control-button control-panel-button control-panel-button-abort" style="--x: 8px; --y: 815px; --w: 400px; --h: 110px;" data-cmd="ABORT">0x01 Abort</button>
+    <button class="float control-button control-panel-button" style="--x: 8px; --y: 950px; --w: 199px;" data-cmd="ARM">0x02 ARM</button>
+    <button class="float control-button control-panel-button" style="--x: 8px; --y: 1015px; --w: 199px;" data-cmd="IGNITION">0x03 IGNITION</button>
+
+    <!-- <button class="float control-button" style="--x: 8px; --y: 1016px; --w: 199px;" data-cmd="GET_STATUS">0x0A MStatus</button> -->
+    <button class="float control-button control-panel-button" style="--x: 216px; --y: 950px; --w: 199px;" data-cmd="GET_GPS">0x0B GPS&t</button>
+    <button class="float control-button control-panel-button" style="--x: 216px; --y: 1015px; --w: 199px;" data-cmd="GRAVITY">0x0C Gravity</button>
+    <button class="float control-button control-panel-button" style="--x: 424px; --y: 1015px; --w: 199px;" data-cmd="BME_CAL">0x0D BME cal</button>
+
+    <button class="float control-button control-panel-button" style="--x: 424px; --y: 815px; --w: 199px;" data-cmd="OPEN_MAIN">0x04 OPEN M</button>
+    <button class="float control-button control-panel-button" style="--x: 623px; --y: 815px; --w: 199px;" data-cmd="CLOSE_MAIN">0x05 CLOSE M</button>
+
+    <button class="float control-button control-panel-button" style="--x: 424px; --y: 880px; --w: 199px;" data-cmd="OPEN_DUMP">0x06 OPEN D</button>
+    <button class="float control-button control-panel-button" style="--x: 623px; --y: 865px; --w: 199px;" data-cmd="CLOSE_DUMP">0x07 CLOSE D</button>
+
+    <button class="float control-button control-panel-button" style="--x: 424px; --y: 950px; --w: 199px;" data-cmd="OPEN_RELIEF">0x08 OPEN R</button>
+    <button class="float control-button control-panel-button" style="--x: 623px; --y: 915px; --w: 199px;" data-cmd="CLOSE_RELIEF">0x09 CLOSE R</button>
+
+    <button id="setTimeBtn" class="float control-button control-panel-button" style="--x: 623px; --y: 965px; --w: 199px;">0x10 set Time</button>
+
+    <button id="setEngineTiming" class="float control-button control-panel-button" style="--x: 623px; --y: 1015px; --w: 199px;">0x11 set EgnineT</button>
+    <!-- <button id="setStageBtn" class="float control-button" style="--x: 623px; --y: 1016px; --w: 199px;">0x11 Set Stage</button> -->
+
+    <!-- RADIO PACKAGE DATA -->
+    <!-- <span class="float label-text" style="--x: 1260px; --y: 40px;">last command sent:</span> -->
+    <span id="lastCommandSentText" class="float dynamic-field" style="--x: 1100px; --y: 790px; color: black;"></span>
+
+    <!-- <span class="float label-text" style="--x: 1260px; --y: 80px;">command received:</span> -->
+    <span id="commandReceivedText" class="float dynamic-field" style="--x: 1100px; --y: 823px; color: black;"></span>
+
+    <!-- <span class="float label-text" style="--x: 1260px; --y: 120px;">last received:</span> -->
+    <span id="lastReceivedPacketText" class="float dynamic-field" style="--x: 1100px; --y: 854px; color: black;"></span>
+
+    <!-- <span class="float label-text" style="--x: 1260px; --y: 160px;">accepted:</span> -->
+    <span id="commandAcceptedText" class="float dynamic-field" style="--x: 1100px; --y: 883px; color: black;"></span>
+
+    <!-- <span class="float label-text" style="--x: 1260px; --y: 200px;">reason:</span> -->
+    <span id="commandReasonText" class="float dynamic-field" style="--x: 1100px; --y: 915px; color: black;"></span>
+
+    <!-- <span class="float label-text" style="--x: 1260px; --y: 240px;">command count:</span> -->
+    <span id="commandCountText" class="float dynamic-field" style="--x: 1100px; --y: 945px; color: black;"></span>
+
+    <div id="overrideStatusPill" class="float override-status" style="--x: 837px; --y: 976px; --w: 337px;">OVERRIDE MODE ENABLE</div>
+
+    <!-- <span class="float label-text" style="--x: 1260px; --y: 350px;">OVERRIDE password:</span> -->
+    <input id="overridePasswordInput" class="float command-input" type="password" style="--x: 1093px; --y: 1016px; --w: 136px; --h: 51px;">
+    <button id="overrideSendBtn" class="float control-button" style="--x: 1237px; --y: 1016px; --w: 76px; --h: 51px;">send</button>
+    <button id="overrideExitBtn" class="float control-button" style="--x: 1186px; --y: 970px; --w: 128px; --h: 45px">EXIT</button>
+
+    <!-- MODULES -->
+    <div id="fastModuleLsmPill" class="float module-pill" style="--x: 1338px; --y: 800px; --w: 95px; --h: 55px;">LSM</div>
+    <div id="fastModuleBmePill" class="float module-pill" style="--x: 1436px; --y: 800px; --w: 95px; --h: 55px;">BME</div>
+    <div id="fastModuleSdPill" class="float module-pill" style="--x: 1338px; --y: 870px; --w: 95px; --h: 55px;">SD</div>
+    <div id="fastModuleAdxlPill" class="float module-pill" style="--x: 1436px; --y: 870px; --w: 95px; --h: 55px;">ADXL</div>
+    <div id="fastModuleDsPill" class="float module-pill" style="--x: 1338px; --y: 940px; --w: 95px; --h: 55px;">DS</div>
+    <div id="fastModuleGpsPill" class="float module-pill" style="--x: 1436px; --y: 940px; --w: 95px; --h: 55px;">GPS</div>
+
+
+
+    <!-- GRAPH WINDOW / CANVAS -->
+    <!-- Move and resize this with --x, --y, --w, --h. Backend draws altitude vs timeline here. -->
+    <canvas id="altitudeGraphCanvas" class="float graph-window" style="--x: 8px; --y: 8px; --w: 1270px; --h: 724px;"></canvas>
+
+    <!-- GPS -->
+    <!-- <span class="float label-text" style="--x: 1260px; --y: 590px;">lon:</span> -->
+    <!-- <span id="gpsLonText" class="float dynamic-field" style="--x: 1500px; --y: 907px;">0.0000000</span> -->
+
+    <!-- <span class="float label-text" style="--x: 1260px; --y: 630px;">lat:</span> -->
+    <!-- <span id="gpsLatText" class="float dynamic-field" style="--x: 1500px; --y: 937px;">0.0000000</span> -->
+
+    <!-- <span class="float label-text" style="--x: 1260px; --y: 670px;">alt:</span> -->
+    <!-- <span id="gpsAltMText" class="float dynamic-field" style="--x: 1449px; --y: 972px;">0.000</span> -->
+    <!-- <span class="float label-text" style="--x: 1390px; --y: 670px;">m</span> -->
+    <!-- <span id="gpsAltFtText" class="float dynamic-field" style="--x: 1630px; --y: 972px;">0.000</span> -->
+    <!-- <span class="float label-text" style="--x: 1520px; --y: 670px;">ft</span> -->
+
+    <!-- <span class="float label-text" style="--x: 1260px; --y: 710px;">SIV:</span> -->
+    <!-- <span id="gpsSivText" class="float dynamic-field" style="--x: 1569px; --y: 997px;">0</span> -->
+
+    <!-- <span class="float label-text" style="--x: 1260px; --y: 750px;">PPS:</span> -->
+    <!-- <span id="gpsPpsText" class="float dynamic-field" style="--x: 1569px; --y: 1027px;">0</span> -->
+
+
+
+    <!-- =========================================================
+         NEW VF2 / NEW GUI FLOAT ELEMENTS
+         These are new interactive fields from the new Nano JSON and PDF design.
+         They are placed below page 1 by default. Move/resize with --x/--y/--w/--h.
+         Old fields above were not moved.
+         ========================================================= -->
+
+    <!-- Latest update / rocket time -->
+    <span id="lastTimeUpdatedText" class="float dynamic-field" style="--x: 1750px; --y: 34px; --w: 240px;"></span>
+    <!-- above one for constant update -->
+    <span id="lastTimeUpdatedTextGPSt" class="float dynamic-field" style="--x: 450px; --y: 1135px; --w: 240px;">time</span>
+    <!-- above one for GPS%t update -->
+    <span id="rocketTimeText" class="float dynamic-field" style="--x: 250px; --y: 1183px; --w: 340px; font-size: 25px;">time</span>
+
+    <!-- New GPS&t duplicate/status fields for page 2 design -->
+    <!-- <span id="gpsTStatusTitleText" class="float dynamic-field" style="--x: 1600px; --y: 800px; --w: 260px;">GPS&t LATEST STATUS</span> -->
+    <span id="gps2LonText" class="float dynamic-field" style="--x: 100px; --y: 1267px; --w: 260px; font-size: 25px;">0.0000000</span>
+    <span id="gps2LatText" class="float dynamic-field" style="--x: 100px; --y: 1295px; --w: 260px; font-size: 25px;">0.0000000</span>
+    <span id="gps2AltText" class="float dynamic-field" style="--x: 100px; --y: 1325px; --w: 260px; font-size: 25px;">0.000</span>
+    <span id="gps2SivText" class="float dynamic-field" style="--x: 100px; --y: 1355px; --w: 200px; font-size: 25px;">0</span>
+    <span id="gps2PpsText" class="float dynamic-field" style="--x: 100px; --y: 1385px; --w: 200px; font-size: 25px;">0</span>
+
+
+    <span id="EngineMinWorkingTimeText" class="float dynamic-field" style="--x: 300px; --y: 1245px; --w: 260px;">Min Working Engine Time (ms):</span>
+    <span id="EngineMinWorkingTime" class="float dynamic-field" style="--x: 300px; --y: 1275px; --w: 200px; font-size: 25px;">0</span>
+    <span id="EngineMaxWorkingTimeText" class="float dynamic-field" style="--x: 300px; --y: 1315px; --w: 260px;">Max Working Engine Time (ms):</span>
+    <span id="EngineMaxWorkingTime" class="float dynamic-field" style="--x: 300px; --y: 1345px; --w: 200px; font-size: 25px;">0</span>
+
+    <!-- New max altitude field from fast packet -->
+    <!-- <span id="currentMaxAltitudeMText" class="float dynamic-field" style="--x: 420px; --y: 1120px; --w: 240px;">max alt: 0 m</span> -->
+    <span id="currentMaxAltitudeFtText" class="float dynamic-field" style="--x: 1833px; --y: 258px; --w: 240px;">0</span>
+
+    <!-- New module status flags from fast packet. These duplicate/extend MStatus without removing MStatus. -->
+    <!-- <div id="fastModuleLsmPill" class="float module-pill" style="--x: 420px; --y: 1210px; --w: 95px; --h: 55px;">LSM</div> -->
+    <!-- <div id="fastModuleAdxlPill" class="float module-pill" style="--x: 525px; --y: 1210px; --w: 95px; --h: 55px;">ADXL</div> -->
+    <!-- <div id="fastModuleBmePill" class="float module-pill" style="--x: 630px; --y: 1210px; --w: 95px; --h: 55px;">BME</div> -->
+    <!-- <div id="fastModuleDsPill" class="float module-pill" style="--x: 735px; --y: 1210px; --w: 95px; --h: 55px;">DS</div> -->
+    <!-- <div id="fastModuleSdPill" class="float module-pill" style="--x: 840px; --y: 1210px; --w: 95px; --h: 55px;">SD</div> -->
+    <!-- <div id="fastModuleGpsPill" class="float module-pill" style="--x: 945px; --y: 1210px; --w: 95px; --h: 55px;">GPS</div> -->
+
+    <!-- New make-sense flags from fast packet. -->
+    <div id="makesGpsPill" class="float module-pill" style="--x: 1600px; --y: 800px; --w: 95px; --h: 55px;">GPS</div>
+    <div id="makesBmePill" class="float module-pill" style="--x: 1700px; --y: 800px; --w: 95px; --h: 55px;">BME</div>
+    <!-- <div id="makesAdxlPill" class="float module-pill" style="--x: 1800px; --y: 800px; --w: 95px; --h: 55px;">ADXL</div> -->
+    <div id="makesLsmPill" class="float module-pill" style="--x: 1800px; --y: 800px; --w: 95px; --h: 55px;">LSM</div>
+    <div id="makesFuelTankPressurePill" class="float module-pill" style="--x: 1600px; --y: 870px; --w: 300px; --h: 55px;">Fuel Tank Pressure</div>
+    <div id="makesCombustionPressurePill" class="float module-pill" style="--x: 1600px; --y: 940px; --w: 300px; --h: 55px;">Combustion Chamber Pressure</div>
+
+    <!-- New placeholders from page 2 design. Backend can fill these later without changing IDs. -->
+    <div id="radioLogWindow" class="float radio-log-window" style="--x: 610px; --y: 1085px; --w: 530px; --h: 350px;"></div>
+    <!-- <button id="openLogBtn" class="float control-button open-log-button" style="--x: 640px; --y: 1280px; --w: 430px; --h: 60px;">Open log</button> -->
+    <div id="googleMapWindow" class="float map-window" style="--x: 1px; --y: 1448px; --w: 1145px; --h: 710px;">MAP</div>
+    <canvas id="n2oPressureGraphCanvas" class="float small-graph-window" style="--x: 1150px; --y: 1090px; --w: 750px; --h: 350px;"></canvas>
+    <canvas id="combustionPressureGraphCanvas" class="float small-graph-window" style="--x: 1150px; --y: 1450px; --w: 750px; --h: 350px;"></canvas>
+    <canvas id="rssiGraphCanvas" class="float small-graph-window" style="--x: 1150px; --y: 1800px; --w: 750px; --h: 350px;"></canvas>
+
+    <!-- LOG -->
+    <button id="downloadLogBtn" class="float control-button log-button" style="--x: 1330px; --y: 1010px; --w: 400px;">Download Log</button>
+    <button id="clearLogBtn" class="float control-button log-button" style="--x: 1730px; --y: 1010px; --w: 170px;">Clear Log</button>
+  </div>
+</div>
+
+
+<div id="commandModalBackdrop">
+  <div id="commandModal">
+    <h2 id="modalTitle">Command</h2>
+    <div id="modalHelp"></div>
+    <input id="modalInput" type="text">
+    <div class="modal-buttons">
+      <button id="modalCancelBtn">Cancel</button>
+      <button id="modalSendBtn">Send</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* =========================================================
+   ALAN CONTROL CENTER BACKEND
+   Reads JSON lines from Nano over Web Serial.
+   Sends text commands to Nano.
+   Updates only IDs/classes; your coordinates stay untouched.
+   ========================================================= */
+
+/* Keeps the 1920px coordinate system full-width on any monitor, with vertical scroll. */
+function resizeDashboard() {
+  const scale = window.innerWidth / 1920;
+  const wrapper = document.getElementById('scale-wrapper');
+  const dashboard = document.getElementById('dashboard');
+  document.documentElement.style.setProperty('--scale', scale);
+  dashboard.style.transform = `scale(${scale})`;
+  wrapper.style.minHeight = `${2160 * scale}px`;
+}
+window.addEventListener('resize', resizeDashboard);
+resizeDashboard();
+
+const FT_PER_M = 3.28084;
+const MPH_PER_MPS = 2.2369362921;
+const stageNames = {
+  1: 'waiting',
+  2: 'arm',
+  3: 'ignition',
+  4: 'engine working',
+  5: 'data gathering'
+};
+const rejectReasons = {
+  0: 'accepted',
+  1: 'unknown',
+  2: 'bad checksum',
+  3: 'override required',
+  4: 'bad password',
+  5: 'bad stage',
+  6: 'not armed',
+  7: 'arm not complete',
+  8: 'bad payload'
+};
+
+let serialPort = null;
+let serialReader = null;
+let serialWriter = null;
+const textEncoder = new TextEncoder();
+
+const app = {
+  serialConnected: false,
+  lastStage: null,
+  lastMain: 0,
+  lastRelief: 0,
+  lastDump: 0,
+  graphPoints: [],
+  graphEvents: [],
+  logs: [],
+  maxAlt: 0,
+  lastRadioPacketMs: 0,
+  pressurePoints: [],
+  rssiPoints: [],
+  perfectTrajectory: []
+};
+
+function el(id) {
+  return document.getElementById(id);
+}
+
+function setText(id, value) {
+  const e = el(id);
+  if (e) e.textContent = value;
+}
+
+function setGoodBad(e, good) {
+  if (!e) return;
+  e.classList.toggle('status-good', !!good);
+  e.classList.toggle('status-bad', !good);
+}
+
+function setPill(id, active) {
+  const e = el(id);
+  if (e) e.classList.toggle('active', !!active);
+}
+
+function setModule(id, ok) {
+  const e = el(id);
+  if (e) e.classList.toggle('bad', !ok);
+}
+
+function setValveVisual(id, open) {
+  const e = el(id);
+  if (e) {
+    e.classList.toggle('open', !!open);
+    e.textContent = open ? 'open' : 'closed';
+  }
+}
+
+function num(value, fallback = 0) {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : fallback;
+}
+
+function fmt(value, digits = 1) {
+  const n = Number(value);
+  return Number.isFinite(n) ? n.toFixed(digits) : '-';
+}
+
+function twoDigit(value) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return '00';
+  return String(Math.trunc(n)).padStart(2, '0');
+}
+
+function computerTimeStampText() {
+  const d = new Date();
+  return `${twoDigit(d.getHours())}:${twoDigit(d.getMinutes())}:${twoDigit(d.getSeconds())} | ${d.getMonth() + 1}/${d.getDate()}`;
+}
+
+function updateLastTimeUpdatedFromComputer() {
+  setText('lastTimeUpdatedText', computerTimeStampText());
+}
+
+function updateGpsTimeUpdatedFromComputer() {
+  setText('lastTimeUpdatedTextGPSt', computerTimeStampText());
+}
+
+function addLog(line) {
+  const msg = `${new Date().toLocaleTimeString()} ${line}`;
+  app.logs.push(msg);
+  if (app.logs.length > 2000) app.logs.shift();
+  const logBox = el('serialDebugLog');
+  if (logBox) {
+    logBox.textContent = app.logs.join('\n');
+    logBox.scrollTop = logBox.scrollHeight;
+  }
+}
+
+async function writeLine(command) {
+  if (!serialWriter) {
+    addLog(`NOT CONNECTED: ${command}`);
+    return;
+  }
+  await serialWriter.write(textEncoder.encode(command + '\n'));
+  setText('lastCommandSentText', command);
+  addLog(`TX ${command}`);
+}
+
+async function connectSerial() {
+  try {
+    serialPort = await navigator.serial.requestPort();
+    await serialPort.open({ baudRate: 115200 });
+    serialWriter = serialPort.writable.getWriter();
+    app.serialConnected = true;
+    const connectButton = el('connectBtn');
+    if (connectButton) {
+      connectButton.textContent = 'connected';
+      connectButton.classList.add('serial-connected');
+    }
+    addLog('SERIAL CONNECTED');
+    serialReadLoop();
+  } catch (err) {
+    addLog(`CONNECT ERROR: ${err.message}`);
+  }
+}
+
+async function disconnectSerial() {
+  try { if (serialReader) await serialReader.cancel(); } catch (err) {}
+  try { if (serialWriter) { serialWriter.releaseLock(); serialWriter = null; } } catch (err) {}
+  try { if (serialPort) await serialPort.close(); } catch (err) {}
+  serialPort = null;
+  app.serialConnected = false;
+  const connectButton = el('connectBtn');
+  if (connectButton) {
+    connectButton.textContent = 'Connect Serial';
+    connectButton.classList.remove('serial-connected');
+  }
+  addLog('SERIAL DISCONNECTED');
+}
+
+async function serialReadLoop() {
+  const decoder = new TextDecoder();
+  serialReader = serialPort.readable.getReader();
+  let buffer = '';
+
+  try {
+    while (true) {
+      const { value, done } = await serialReader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      let newlineIndex;
+      while ((newlineIndex = buffer.indexOf('\n')) >= 0) {
+        const line = buffer.slice(0, newlineIndex).trim();
+        buffer = buffer.slice(newlineIndex + 1);
+        if (line) handleSerialLine(line);
+      }
+    }
+  } catch (err) {
+    addLog(`SERIAL ERROR: ${err.message}`);
+  } finally {
+    try { serialReader.releaseLock(); } catch (err) {}
+  }
+}
+
+function handleSerialLine(line) {
+  addLog(line);
+
+  //if (!line.startsWith('{')) return;
+
+  // Ignore incomplete / broken JSON lines from Nano reset or Serial noise.
+  // if (!line.endsWith('}')) {
+  //   addLog(`IGNORED INCOMPLETE JSON: ${line}`);
+  //   return;
+  // }
+
+  try {
+  const packet = JSON.parse(line);
+    if (packet.type === 'fast' || packet.type === 'gps' || packet.type === 'modules' || packet.type === 'command_ack') {
+      app.lastRadioPacketMs = Date.now();
+    }
+    if (packet.type === 'fast') handleFastPacket(packet);
+    else if (packet.type === 'gps') handleGpsPacket(packet);
+    else if (packet.type === 'modules') handleModulesPacket(packet);
+    else if (packet.type === 'command_ack') handleAckPacket(packet);
+    else if (packet.type === 'tx') handleTxPacket(packet);
+  } catch (err) {
+    addLog(`JSON ERROR: ${err.message}`);
+  }
+}
+
+function resetGraph() {
+  app.graphPoints = [];
+  app.graphEvents = [];
+  app.maxAlt = 0;
+  app.lastMain = 0;
+  app.lastRelief = 0;
+  app.lastDump = 0;
+  drawAltitudeGraph();
+}
+
+function updateModuleStatusFromFlags(moduleFlags) {
+  setModule('moduleSdPill', (moduleFlags & 2) !== 0);
+  setModule('moduleLsmPill', (moduleFlags & 4) !== 0);
+  setModule('moduleAdxlPill', (moduleFlags & 8) !== 0);
+  setModule('moduleBmePill', (moduleFlags & 16) !== 0);
+  setModule('moduleGpsPill', (moduleFlags & 32) !== 0);
+  setModule('moduleDsPill', (moduleFlags & 64) !== 0);
+
+  setModule('fastModuleSdPill', (moduleFlags & 2) !== 0);
+  setModule('fastModuleLsmPill', (moduleFlags & 4) !== 0);
+  setModule('fastModuleAdxlPill', (moduleFlags & 8) !== 0);
+  setModule('fastModuleBmePill', (moduleFlags & 16) !== 0);
+  setModule('fastModuleGpsPill', (moduleFlags & 32) !== 0);
+  setModule('fastModuleDsPill', (moduleFlags & 64) !== 0);
+}
+
+function updateMakesSenseFromFlags(makesFlags) {
+  setModule('makesGpsPill', (makesFlags & 1) !== 0);
+  setModule('makesBmePill', (makesFlags & 2) !== 0);
+  setModule('makesAdxlPill', (makesFlags & 4) !== 0);
+  setModule('makesLsmPill', (makesFlags & 8) !== 0);
+  setModule('makesFuelTankPressurePill', (makesFlags & 16) !== 0);
+  setModule('makesCombustionPressurePill', (makesFlags & 32) !== 0);
+}
+
+function handleFastPacket(m) {
+  app.lastRadioPacketMs = Date.now();
+  const stage = num(m.stage);
+  const altM = num(m.alt_m);
+  const timelineS = num(m.timeline_s);
+  const main = num(m.main);
+  const relief = num(m.relief);
+  const dump = num(m.dump);
+
+  // Graph is allowed to run in WAITING and does not reset on ARM anymore.
+  // It resets when the ABORT command is sent.
+
+  app.maxAlt = Math.max(app.maxAlt, altM);
+  app.graphPoints.push({ t: timelineS, alt: altM });
+  if (app.graphPoints.length > 2500) app.graphPoints.shift();
+
+  if (app.lastMain === 1 && main === 0) {
+    app.graphEvents.push({ label: 'MAIN close', t: timelineS, alt: altM });
+  }
+  if (app.lastRelief === 0 && relief === 1) {
+    app.graphEvents.push({ label: 'RELIEF OPEN', t: timelineS, alt: altM });
+  }
+
+  app.lastMain = main;
+  app.lastRelief = relief;
+  app.lastDump = dump;
+  app.lastStage = stage;
+
+  setText('connectionText', 'CONNECTED');
+  setText('radioDbText', m.rssi ?? m.radio_db ?? '#');
+  const radioText = el('connectionText');
+  const radioDb = el('radioDbText');
+  if (radioText) {
+    radioText.classList.add('radio-link-good');
+    radioText.classList.remove('radio-link-bad');
+  }
+  if (radioDb) {
+    radioDb.classList.add('radio-link-good');
+    radioDb.classList.remove('radio-link-bad');
+  }
+
+  updateLastTimeUpdatedFromComputer();
+
+  if (m.current_max_altitude_m !== undefined) {
+    const maxAltM = num(m.current_max_altitude_m);
+    setText('currentMaxAltitudeMText', `${fmt(maxAltM, 0)}`);
+    setText('currentMaxAltitudeFtText', `${fmt(maxAltM * FT_PER_M, 0)}`);
+  }
+
+  if (m.module_status_flags !== undefined) {
+    updateModuleStatusFromFlags(num(m.module_status_flags));
+  }
+  if (m.makes_sense_flags !== undefined) {
+    updateMakesSenseFromFlags(num(m.makes_sense_flags));
+  }
+
+  const rssiValue = num(m.rssi ?? m.radio_db, NaN);
+  if (Number.isFinite(rssiValue)) {
+    app.rssiPoints.push({ t: timelineS, v: rssiValue });
+    if (app.rssiPoints.length > 2500) app.rssiPoints.shift();
+  }
+  app.pressurePoints.push({
+    t: timelineS,
+    n2o: num(m.tank_psi),
+    chamber: num(m.chamber_psi)
+  });
+  if (app.pressurePoints.length > 2500) app.pressurePoints.shift();
+
+  setText('stageNumberText', stage || '#');
+  setText('stageNameText', stageNames[stage] || 'name');
+
+  setText('velocityBoxText', fmt(num(m.vel_mps) * MPH_PER_MPS, 1));
+  setText('tankPressureBoxText', fmt(m.tank_psi, 0));
+  setText('chamberPressureBoxText', fmt(m.chamber_psi, 0));
+  setText('batteryVoltageBoxText', fmt(m.battery_v, 1));
+  setText('co2PressureBoxText', fmt(m.co2_psi, 0));
+
+  setText('tiltDegText', fmt(m.tilt_deg, 1));
+  setText('kalmanAltMText', fmt(m.alt_m, 1));
+  setText('kalmanAltFtText', fmt(altM * FT_PER_M, 0));
+  setText('kalmanVelMpsText', fmt(m.vel_mps, 1));
+  setText('kalmanVelFpsText', fmt(num(m.vel_mps) * FT_PER_M, 1));
+  setText('predApogeeMText', fmt(m.pred_apogee_m, 1));
+  setText('predApogeeFtText', fmt(num(m.pred_apogee_m) * FT_PER_M, 0));
+
+  setText('timelineSignText', timelineS < 0 ? 'T-' : 'T+');
+  setText('timelineValueText', Math.abs(timelineS).toFixed(1));
+
+  setGoodBad(el('mainOpenText'), main === 1);
+  setGoodBad(el('reliefOpenText'), relief === 1);
+  setGoodBad(el('dumpOpenText'), dump === 1);
+
+  const flags1 = num(m.flags1);
+  const flags2 = num(m.flags2);
+  setGoodBad(el('mainConnectionText'), (flags2 & 64) !== 0);
+  setGoodBad(el('reliefConnectionText'), (flags2 & 128) !== 0);
+  setGoodBad(el('dumpConnectionText'), (flags2 & 32) !== 0);
+
+  setValveVisual('mainValveVisual', main === 1);
+  setValveVisual('reliefValveVisual', relief === 1);
+  setValveVisual('dumpValveVisual', dump === 1);
+
+  setPill('stageWaitingPill', stage === 1);
+  setPill('stageArmedPill', stage === 2);
+  setPill('stageIgnitionPill', stage === 3);
+  setPill('stageNoReturnPill', (flags1 & 16) !== 0);
+
+  const overrideActive = (flags1 & 128) !== 0;
+  const overridePill = el('overrideStatusPill');
+  if (overridePill) overridePill.classList.toggle('override-active', overrideActive);
+
+  const tiltNeedle = el('tiltNeedle');
+  if (tiltNeedle) tiltNeedle.style.transform = `rotate(${num(m.tilt_deg)}deg)`;
+
+  if (m.commands_received !== undefined) setText('commandCountText', m.commands_received);
+  if (m.last_cmd !== undefined) setText('commandReceivedText', m.last_cmd);
+
+  drawAltitudeGraph();
+  drawSmallGraphs();
+}
+
+function handleGpsPacket(m) {
+  updateGpsTimeUpdatedFromComputer();
+  setText('gpsLonText', fmt(m.lon, 7));
+  setText('gpsLatText', fmt(m.lat, 7));
+  setText('gpsAltMText', fmt(m.alt_m, 3));
+  setText('gpsAltFtText', fmt(num(m.alt_m) * FT_PER_M, 3));
+  setText('gpsSivText', m.siv ?? 0);
+  setText('gpsPpsText', m.pps ?? 0);
+
+  updateGoogleMapWindow(m.lat, m.lon);
+
+  setText('gps2LonText', `${fmt(m.lon, 7)}`);
+  setText('gps2LatText', `${fmt(m.lat, 7)}`);
+  setText('gps2AltText', `${fmt(m.alt_m, 3)}`);
+  setText('gps2SivText', `${m.siv ?? 0}`);
+  setText('gps2PpsText', `${m.pps ?? 0}`);
+
+  if (num(m.has_rtc_time) === 1 || m.rtc_time) {
+  const datePart = `${m.rtc_month ?? '--'}/${m.rtc_day ?? '--'}`;
+  const timePart = `${twoDigit(m.rtc_hour)}:${twoDigit(m.rtc_minute)}:${twoDigit(m.rtc_second)}`;
+  setText('rocketTimeText', `${timePart} ${datePart}`);
+  }
+
+  // if (
+  //   num(m.has_engine_timing) === 1 ||
+  //   m.min_engine_on_time_ms !== undefined ||
+  //   m.max_engine_on_time_ms !== undefined ||
+  //   m.main_valve_auto_close_delay_ms !== undefined
+  // ) {
+    const minMs = m.min_engine_on_time_ms ?? 0;
+    const maxMs = m.max_engine_on_time_ms ?? m.main_valve_auto_close_delay_ms ?? 0;
+
+    setText('EngineMinWorkingTime', `${minMs}`);
+    setText('EngineMaxWorkingTime', `${maxMs}`);
+  // }
+
+  setText('lastReceivedPacketText', 'GPS&t');
+  if (m.commands_received !== undefined) setText('commandCountText', m.commands_received);
+  if (m.last_cmd !== undefined) setText('commandReceivedText', m.last_cmd);
+}
+
+function updateGoogleMapWindow(lat, lon) {
+  const box = el('googleMapWindow');
+  if (!box) return;
+
+  lat = Number(lat);
+  lon = Number(lon);
+
+  if (!Number.isFinite(lat) || !Number.isFinite(lon)) return;
+
+  const delta = 0.01;
+  const left = lon - delta;
+  const right = lon + delta;
+  const top = lat + delta;
+  const bottom = lat - delta;
+
+  box.innerHTML = `
+    <iframe
+      width="100%"
+      height="100%"
+      style="border:0;"
+      src="https://www.openstreetmap.org/export/embed.html?bbox=${left},${bottom},${right},${top}&layer=mapnik&marker=${lat},${lon}">
+    </iframe>
+  `;
+}
+
+function handleModulesPacket(m) {
+  const moduleFlags = num(m.module_flags);
+  updateModuleStatusFromFlags(moduleFlags);
+  if (m.makes_flags !== undefined) updateMakesSenseFromFlags(num(m.makes_flags));
+  setText('lastReceivedPacketText', 'STATUS');
+  if (m.commands_received !== undefined) setText('commandCountText', m.commands_received);
+  if (m.last_cmd !== undefined) setText('commandReceivedText', m.last_cmd);
+}
+
+function handleAckPacket(m) {
+  setText('lastReceivedPacketText', 'ACK');
+  setText('commandReceivedText', m.last_cmd ?? '-');
+  setText('commandAcceptedText', num(m.accepted) === 1 ? 'YES' : 'NO');
+  setText('commandReasonText', rejectReasons[num(m.reason)] || m.reason || '-');
+  if (m.commands_received !== undefined) setText('commandCountText', m.commands_received);
+}
+
+function handleTxPacket(m) {
+  if (m.cmd) setText('lastCommandSentText', m.cmd);
+}
+
+function drawAltitudeGraph() {
+  const canvas = el('altitudeGraphCanvas');
+  if (!canvas) return;
+
+  const width = canvas.offsetWidth || 800;
+  const height = canvas.offsetHeight || 400;
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = width * dpr;
+  canvas.height = height * dpr;
+
+  const ctx = canvas.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, width, height);
+
+  const padL = 62;
+  const padR = 32;
+  const padT = 34;
+  const padB = 52;
+  const plotW = Math.max(10, width - padL - padR);
+  const plotH = Math.max(10, height - padT - padB);
+  const x0 = padL;
+  const y0 = height - padB;
+  const x1 = width - padR;
+  const y1 = padT;
+
+  const hasPerfectTrajectory = app.perfectTrajectory.length > 1;
+
+  const firstPerfectPoint = hasPerfectTrajectory
+    ? app.perfectTrajectory[0]
+    : null;
+
+  const lastPerfectPoint = hasPerfectTrajectory
+    ? app.perfectTrajectory[app.perfectTrajectory.length - 1]
+    : null;
+
+  const targetAlt = lastPerfectPoint ? lastPerfectPoint.alt : null;
+
+  const perfectAlts = app.perfectTrajectory.map(p => p.alt);
+  const perfectTimes = app.perfectTrajectory.map(p => p.t);
+
+  const realAlts = app.graphPoints.map(p => p.alt);
+  const realTimes = app.graphPoints.map(p => p.t);
+
+  const minT = firstPerfectPoint ? firstPerfectPoint.t : 0;
+  const minAlt = firstPerfectPoint ? firstPerfectPoint.alt : 0;
+
+  let maxT = hasPerfectTrajectory
+    ? Math.max(minT + 10, ...perfectTimes, ...realTimes)
+    : Math.max(10, ...realTimes);
+
+  let maxAlt = Math.max(
+    minAlt + 100,
+    targetAlt !== null ? targetAlt * 1.1 : minAlt + 100,
+    app.maxAlt * 1.15,
+    ...perfectAlts.map(a => a * 1.15),
+    ...realAlts.map(a => a * 1.15)
+  );
+
+  if (maxT <= minT) maxT = minT + 10;
+  if (maxAlt <= minAlt) maxAlt = minAlt + 100;
+
+  const x = t => x0 + ((t - minT) / (maxT - minT)) * plotW;
+  const y = a => y0 - ((a - minAlt) / (maxAlt - minAlt)) * plotH;
+
+  ctx.save();
+  ctx.strokeStyle = '#ffffff';
+  ctx.fillStyle = '#ffffff';
+  ctx.lineWidth = 2;
+  ctx.font = '15px Arial';
+
+  // Grid and axis values.
+  const yTicks = 5;
+  const xTicks = 6;
+  ctx.lineWidth = 1;
+  ctx.strokeStyle = 'rgba(255,255,255,0.22)';
+  ctx.fillStyle = '#ffffff';
+
+  for (let i = 0; i <= yTicks; i++) {
+    const alt = minAlt + ((maxAlt - minAlt) / yTicks) * i;
+    const py = y(alt);
+    ctx.beginPath();
+    ctx.moveTo(x0, py);
+    ctx.lineTo(x1, py);
+    ctx.stroke();
+    ctx.fillText(`${alt.toFixed(0)} m`, 6, py + 5);
+  }
+
+  for (let i = 0; i <= xTicks; i++) {
+    const t = minT + ((maxT - minT) / xTicks) * i;
+    const px = x(t);
+    ctx.beginPath();
+    ctx.moveTo(px, y1);
+    ctx.lineTo(px, y0);
+    ctx.stroke();
+    ctx.fillText(`${t.toFixed(0)} s`, px - 12, height - 16);
+  }
+
+  // Axes with arrowheads.
+  ctx.strokeStyle = '#ffffff';
+  ctx.fillStyle = '#ffffff';
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(x0, y0);
+  ctx.lineTo(x0, y1);
+  ctx.lineTo(x0 - 8, y1 + 16);
+  ctx.moveTo(x0, y1);
+  ctx.lineTo(x0 + 8, y1 + 16);
+  ctx.moveTo(x0, y0);
+  ctx.lineTo(x1, y0);
+  ctx.lineTo(x1 - 16, y0 - 8);
+  ctx.moveTo(x1, y0);
+  ctx.lineTo(x1 - 16, y0 + 8);
+  ctx.stroke();
+
+  ctx.font = '20px Arial';
+  ctx.fillText('alt', x0 - 36, y1 - 8);
+  ctx.fillText('t', x1 + 8, y0 + 6);
+
+  // Target altitude line from uploaded perfect trajectory only.
+  if (targetAlt !== null) {
+    const targetY = y(targetAlt);
+    const targetFt = targetAlt * FT_PER_M;
+
+    ctx.setLineDash([10, 6]);
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(x0, targetY);
+    ctx.lineTo(x1, targetY);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    ctx.font = '16px Arial';
+    ctx.fillText(`${targetFt.toFixed(0)} ft / ${targetAlt.toFixed(0)} m`, x0 + 8, targetY - 8);
+  }
+
+  // Uploaded perfect/theoretical trajectory line.
+  if (app.perfectTrajectory.length > 1) {
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = '#ffffff';
+    ctx.beginPath();
+    app.perfectTrajectory.forEach((p, i) => {
+      const px = x(p.t);
+      const py = y(p.alt);
+      if (i === 0) ctx.moveTo(px, py);
+      else ctx.lineTo(px, py);
+    });
+    ctx.stroke();
+  }
+
+  // Real flight altitude data points.
+  if (app.graphPoints.length > 0) {
+    ctx.strokeStyle = '#d83cff';
+    ctx.fillStyle = '#d83cff';
+    ctx.lineWidth = 0;
+    app.graphPoints.forEach(p => {
+      const px = x(p.t);
+      const py = y(p.alt);
+      ctx.beginPath();
+      ctx.moveTo(px - 5, py - 5);
+      ctx.lineTo(px + 5, py + 5);
+      ctx.moveTo(px + 5, py - 5);
+      ctx.lineTo(px - 5, py + 5);
+      ctx.stroke();
+    });
+  }
+
+  // Event markers.
+  ctx.strokeStyle = '#ffffff';
+  ctx.fillStyle = '#ffffff';
+  ctx.font = '14px Arial';
+  app.graphEvents.forEach(event => {
+    const ex = x(event.t);
+    const ey = y(event.alt);
+    ctx.setLineDash([8, 5]);
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(ex, ey);
+    ctx.lineTo(ex, y0);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.beginPath();
+    ctx.arc(ex, ey, 5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillText(event.label, ex + 8, ey - 8);
+  });
+
+  ctx.restore();
+}
+
+function updateRadioLinkDisplay() {
+  const radioText = el('connectionText');
+  const radioDb = el('radioDbText');
+  const now = Date.now();
+  const radioAlive = app.lastRadioPacketMs > 0 && (now - app.lastRadioPacketMs) < 1500;
+
+  if (radioAlive) {
+    setText('connectionText', 'CONNECTED');
+    if (radioText) {
+      radioText.classList.add('radio-link-good');
+      radioText.classList.remove('radio-link-bad');
+    }
+    if (radioDb) {
+      radioDb.classList.add('radio-link-good');
+      radioDb.classList.remove('radio-link-bad');
+    }
+  } else {
+    setText('connectionText', 'DISCONNECTED');
+    if (radioText) {
+      radioText.classList.add('radio-link-bad');
+      radioText.classList.remove('radio-link-good');
+    }
+    if (radioDb) {
+      radioDb.classList.add('radio-link-bad');
+      radioDb.classList.remove('radio-link-good');
+    }
+  }
+}
+
+function drawLineGraph(canvasId, points, valueKey, label) {
+  const canvas = el(canvasId);
+  if (!canvas) return;
+  const width = canvas.offsetWidth || 400;
+  const height = canvas.offsetHeight || 250;
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = width * dpr;
+  canvas.height = height * dpr;
+  const ctx = canvas.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, width, height);
+
+  const padL = 54;
+  const padR = 22;
+  const padT = 30;
+  const padB = 42;
+  const plotW = Math.max(10, width - padL - padR);
+  const plotH = Math.max(10, height - padT - padB);
+  const x0 = padL;
+  const y0 = height - padB;
+  const x1 = width - padR;
+  const y1 = padT;
+
+  const tValues = points.map(p => num(p.t));
+  let minT = Math.min(0, ...tValues);
+  let maxT = Math.max(10, ...tValues);
+  if (maxT <= minT) maxT = minT + 10;
+
+  const vValues = points.map(p => num(p[valueKey])).filter(v => Number.isFinite(v));
+  let minV = Math.min(0, ...vValues);
+  let maxV = Math.max(1, ...vValues);
+  if (valueKey === 'v') { minV = Math.min(-120, ...vValues); maxV = Math.max(-20, ...vValues); }
+  if (maxV <= minV) maxV = minV + 1;
+
+  const x = t => x0 + ((t - minT) / (maxT - minT)) * plotW;
+  const y = v => y0 - ((v - minV) / (maxV - minV)) * plotH;
+
+  ctx.save();
+  ctx.strokeStyle = 'rgba(255,255,255,0.25)';
+  ctx.fillStyle = '#ffffff';
+  ctx.lineWidth = 1;
+  ctx.font = '14px Arial';
+
+  for (let k = 0; k <= 4; k++) {
+    const py = y0 - (plotH / 4) * k;
+    ctx.beginPath();
+    ctx.moveTo(x0, py);
+    ctx.lineTo(x1, py);
+    ctx.stroke();
+    const val = minV + ((maxV - minV) / 4) * k;
+    ctx.fillText(val.toFixed(0), 5, py + 4);
+  }
+  for (let k = 0; k <= 5; k++) {
+    const px = x0 + (plotW / 5) * k;
+    ctx.beginPath();
+    ctx.moveTo(px, y1);
+    ctx.lineTo(px, y0);
+    ctx.stroke();
+  }
+
+  ctx.strokeStyle = '#ffffff';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(x0, y1);
+  ctx.lineTo(x0, y0);
+  ctx.lineTo(x1, y0);
+  ctx.stroke();
+
+  ctx.font = '18px Arial';
+  ctx.fillText(label, padL, 22);
+
+  if (points.length > 1) {
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    points.forEach((p, idx) => {
+      const px = x(num(p.t));
+      const py = y(num(p[valueKey]));
+      if (idx === 0) ctx.moveTo(px, py);
+      else ctx.lineTo(px, py);
+    });
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function drawSmallGraphs() {
+  drawLineGraph('n2oPressureGraphCanvas', app.pressurePoints, 'n2o', 'N2O pressure vs time');
+  drawLineGraph('combustionPressureGraphCanvas', app.pressurePoints, 'chamber', 'Combustion pressure vs time');
+  drawLineGraph('rssiGraphCanvas', app.rssiPoints, 'v', 'RSSI vs time');
+}
+
+function parsePerfectTrajectoryText(text) {
+  const points = [];
+  const lines = text.split(/\r?\n/);
+
+  for (const rawLine of lines) {
+    const line = rawLine.trim();
+    if (!line || line.startsWith('#')) continue;
+
+    const parts = line.split(/[;,\t ]+/).filter(Boolean);
+    if (parts.length < 2) continue;
+
+    const t = Number(parts[0]);
+    const alt = Number(parts[1]);
+    if (!Number.isFinite(t) || !Number.isFinite(alt)) continue;
+
+    points.push({ t, alt });
+  }
+
+  points.sort((a, b) => a.t - b.t);
+  return points;
+}
+
+function handlePerfectTrajectoryFile(file) {
+  if (!file) return;
+  const reader = new FileReader();
+
+  reader.onload = () => {
+    const points = parsePerfectTrajectoryText(String(reader.result || ''));
+    if (points.length < 2) {
+      addLog('PERFECT TRAJECTORY ERROR: need CSV/TXT with at least two numeric columns: time_s, altitude_m');
+      return;
+    }
+
+    app.perfectTrajectory = points;
+    const button = el('uploadTraject');
+    if (button) {
+      button.textContent = 'perfect trajectory uploaded';
+      button.classList.add('trajectory-uploaded');
+    }
+    addLog(`PERFECT TRAJECTORY LOADED: ${points.length} points`);
+    drawAltitudeGraph();
+  };
+
+  reader.readAsText(file);
+}
+
+function openCommandModal(title, helpText, placeholder, onSend) {
+  const backdrop = el('commandModalBackdrop');
+  const input = el('modalInput');
+  setText('modalTitle', title);
+  setText('modalHelp', helpText);
+  input.value = '';
+  input.placeholder = placeholder;
+  backdrop.style.display = 'flex';
+  input.focus();
+
+  el('modalSendBtn').onclick = () => {
+    onSend(input.value.trim());
+    backdrop.style.display = 'none';
+  };
+  el('modalCancelBtn').onclick = () => {
+    backdrop.style.display = 'none';
+  };
+}
+
+function initializeBackend() {
+  if (el('connectBtn')) el('connectBtn').onclick = connectSerial;
+  if (el('disconnectBtn')) el('disconnectBtn').onclick = disconnectSerial;
+
+  if (el('uploadTraject') && el('perfectTrajectoryInput')) {
+    el('uploadTraject').onclick = () => el('perfectTrajectoryInput').click();
+    el('perfectTrajectoryInput').onchange = event => {
+      const file = event.target.files && event.target.files[0];
+      handlePerfectTrajectoryFile(file);
+      event.target.value = '';
+    };
+  }
+
+  document.querySelectorAll('[data-cmd]').forEach(button => {
+    button.onclick = () => {
+      if (button.dataset.cmd === 'ABORT') resetGraph();
+      writeLine(button.dataset.cmd);
+    };
+  });
+
+  if (el('setStageBtn')) {
+    el('setStageBtn').onclick = () => openCommandModal(
+      'Set Stage',
+      'Enter stage number, usually 1 to 5.',
+      '3',
+      value => writeLine(`SET_STAGE ${value}`)
+    );
+  }
+
+  if (el('setTimeBtn')) {
+    el('setTimeBtn').onclick = () => openCommandModal(
+      'Set DS1307 Time',
+      'Format: yy mo dd hh mm ss dow',
+      '26 5 30 14 20 00 6',
+      value => writeLine(`SET_TIME ${value}`)
+    );
+  }
+  if (el('setEngineTiming')) {
+  el('setEngineTiming').onclick = () => openCommandModal(
+    'Set Engine Timing',
+    'Format: auto_close_ms min_engine_on_ms',
+    '4100 3500',
+    value => {
+      const parts = value.trim().split(/\s+/);
+
+      if (parts.length < 2) {
+        addLog('ENGINE TIMING ERROR: use format like 4100 3500');
+        return;
+      }
+
+      const autoCloseMs = Number(parts[0]);
+      const minEngineOnMs = Number(parts[1]);
+
+      if (!Number.isFinite(autoCloseMs) || !Number.isFinite(minEngineOnMs)) {
+        addLog('ENGINE TIMING ERROR: both values must be numbers');
+        return;
+      }
+
+      if (autoCloseMs <= 0 || minEngineOnMs < 0 || minEngineOnMs > autoCloseMs) {
+        addLog('ENGINE TIMING ERROR: invalid timing values');
+        return;
+      }
+
+      writeLine(`SET_ENGINE_TIMING ${Math.round(autoCloseMs)} ${Math.round(minEngineOnMs)}`);
+    }
+  );
+}
+
+  if (el('overrideSendBtn')) {
+    el('overrideSendBtn').onclick = () => {
+      const password = el('overridePasswordInput') ? el('overridePasswordInput').value : '';
+      writeLine(`OVERRIDE ${password}`);
+    };
+  }
+
+  if (el('overrideExitBtn')) {
+    el('overrideExitBtn').onclick = () => writeLine('EXIT_OVERRIDE');
+  }
+
+  if (el('downloadLogBtn')) {
+    el('downloadLogBtn').onclick = () => {
+      const csv = ['time,line', ...app.logs.map(line => `"${line.replaceAll('"', '""')}"`)].join('\n');
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'alan_control_center_log.csv';
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    };
+  }
+
+  if (el('clearLogBtn')) {
+    el('clearLogBtn').onclick = () => {
+      app.logs = [];
+      const logBox = el('serialDebugLog');
+      if (logBox) logBox.textContent = '';
+      resetGraph();
+    };
+  }
+
+  // Optional: double click connection text to show/hide raw serial log.
+  if (el('connectionText')) {
+    el('connectionText').ondblclick = () => {
+      const logBox = el('serialDebugLog');
+      if (logBox) logBox.classList.toggle('visible');
+    };
+  }
+
+  if (el('openLogBtn')) {
+    el('openLogBtn').onclick = () => {
+      const logBox = el('serialDebugLog');
+      if (logBox) logBox.classList.toggle('visible');
+    };
+  }
+
+  drawAltitudeGraph();
+  drawSmallGraphs();
+  updateLastTimeUpdatedFromComputer();
+  updateRadioLinkDisplay();
+  setInterval(updateRadioLinkDisplay, 500);
+}
+
+window.addEventListener('load', initializeBackend);
+window.addEventListener('resize', () => {
+  drawAltitudeGraph();
+  drawSmallGraphs();
+});
+</script>
+
+</body>
+</html>
